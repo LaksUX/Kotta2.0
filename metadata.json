@@ -1,0 +1,6 @@
+{
+  "name": "Kotta Poker Ledger",
+  "description": "A visually immersive ledger app for home poker nights to track buy-ins, approve re-buys, and pairwise simplify debts in Banks.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
