@@ -48,21 +48,11 @@ const GLOBAL_CSS = `
     color: var(--cream);
     min-height: 100vh;
     width: 100%;
-    max-width: 460px;
+    max-width: 480px;
     margin: 0 auto;
     position: relative;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
-  }
-
-  @media (min-width: 1024px) {
-    .pn-root {
-      max-width: 100% !important;
-      min-height: 100% !important;
-      height: 100% !important;
-      box-shadow: none !important;
-    }
   }
 
   .pn-display {
@@ -646,50 +636,9 @@ export default function App() {
       {!currentUser ? (
         <AuthScreen onAuth={handleAuthSuccess} />
       ) : (
-        <div className="lg:flex lg:flex-row lg:bg-[var(--ink)] lg:min-h-screen lg:justify-center lg:items-center lg:p-6">
-          <div className="w-full max-w-[460px] lg:max-w-[1024px] lg:h-[768px] lg:min-h-[768px] flex flex-col lg:flex-row bg-[var(--ink)] text-[var(--cream)] overflow-hidden rounded-none lg:rounded-3xl border lg:border-white/10 shadow-2xl relative">
+        <div className="min-h-screen w-full bg-[#06080B] flex justify-center items-stretch">
+          <div className="w-full max-w-[480px] h-screen flex flex-col bg-[var(--ink)] text-[var(--cream)] overflow-hidden relative">
             
-            {/* Left Navigation Rail - Desktop only */}
-            <nav className="hidden lg:flex w-20 border-r border-white/10 flex-col items-center py-8 gap-8 bg-[var(--ink)] shrink-0">
-              {/* Premium Hoysala Art-Inspired Logo */}
-              <div 
-                className="cursor-pointer transition-transform duration-300 hover:scale-110"
-                onClick={() => { setSelectedGame(null); setIsCreatingGame(false); }}
-                title="Kotta Felt Board"
-              >
-                <HoysalaLogo size={48} />
-              </div>
-              
-              <div className="flex flex-col gap-6">
-                {/* Home */}
-                <button 
-                  className={`p-3 rounded-xl transition-colors ${(!selectedGame && !isCreatingGame) ? "bg-white/10 text-[var(--gold)]" : "text-white/40 hover:bg-white/5"}`}
-                  onClick={() => { setSelectedGame(null); setIsCreatingGame(false); }}
-                  title="Home Board"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                </button>
-                {/* Create Game */}
-                <button 
-                  className={`p-3 rounded-xl transition-colors ${isCreatingGame ? "bg-white/10 text-[var(--gold)]" : "text-white/40 hover:bg-white/5"}`}
-                  onClick={() => { setIsCreatingGame(true); setSelectedGame(null); }}
-                  title="Host Game"
-                >
-                  <Plus size={24} />
-                </button>
-              </div>
-
-              <div className="mt-auto flex flex-col gap-6 pb-4">
-                <button 
-                  className="p-3 rounded-xl text-white/20 hover:text-white/60 transition-colors" 
-                  onClick={handleLogout} 
-                  title="Sign Out"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
-                </button>
-              </div>
-            </nav>
-
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col overflow-hidden h-full">
               {selectedGame ? (

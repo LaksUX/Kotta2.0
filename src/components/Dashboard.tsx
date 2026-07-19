@@ -50,34 +50,21 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
   return (
     <div className="flex flex-col h-full w-full bg-[var(--ink)] text-[var(--cream)] relative overflow-hidden">
       {/* App Header styled like the High Density Felt Board */}
-      <div className="pn-header flex items-center justify-between px-4 lg:px-8 h-20 border-b border-white/5 bg-[var(--ink)]">
+      <div className="pn-header flex items-center justify-between px-4 h-20 border-b border-white/5 bg-[var(--ink)]">
         <div className="flex items-center gap-3">
-          <div className="lg:hidden">
+          <div>
             <Avatar phone={currentUser.phone} name={currentUser.name} size={36} />
           </div>
           <HoysalaLogo size={38} />
           <div className="pn-header-title">
-            <h1 className="text-xl lg:text-2xl font-serif font-semibold tracking-tight">Kotta</h1>
-            <div className="lg:hidden text-xs text-muted">Welcome back, {currentUser.name}</div>
+            <h1 className="text-xl font-serif font-semibold tracking-tight">Kotta</h1>
+            <div className="text-xs text-muted">Welcome back, {currentUser.name}</div>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="hidden lg:flex flex-col text-right">
-            <span className="text-xs text-[#9A93A6] font-medium uppercase tracking-wider">
-              {liveGames.length > 0 ? "Active Table" : "Overall Stakes"}
-            </span>
-            <span className="text-sm font-semibold">
-              {liveGames.length > 0 ? liveGames[0].title : `${playerLedger.totalNet > 0 ? "+" : ""}${playerLedger.totalNet} Banks`}
-            </span>
-          </div>
-          
-          <div className="hidden lg:block">
-            <Avatar phone={currentUser.phone} name={currentUser.name} size={40} />
-          </div>
-
           <button
-            className="pn-icon-btn lg:hidden"
+            className="pn-icon-btn"
             onClick={onLogout}
             style={{ color: "var(--danger)" }}
             title="Sign out"
@@ -87,13 +74,9 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
         </div>
       </div>
 
-      <div className="pn-body flex-1 overflow-y-auto p-4 lg:p-8 lg:grid lg:grid-cols-12 lg:gap-8">
+      <div className="pn-body flex-1 overflow-y-auto p-4 flex flex-col gap-6">
         {/* LEFT COLUMN: Games List & Controls */}
-        <div className={`col-span-12 lg:col-span-7 flex flex-col gap-6 ${activeTab === "games" ? "flex" : "hidden lg:flex"}`}>
-          <div className="hidden lg:block">
-            <h2 className="text-2xl font-serif font-semibold">Live Games Feed</h2>
-            <p className="text-[#9A93A6] text-sm">Host or join poker sessions on the digital felt.</p>
-          </div>
+        <div className={`flex flex-col gap-6 ${activeTab === "games" ? "flex" : "hidden"}`}>
 
           {/* Filter Pills */}
           <div className="flex items-center justify-between">
@@ -224,11 +207,7 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
         </div>
 
         {/* RIGHT COLUMN: Profile, Charts & Ledger Stats */}
-        <div className={`col-span-12 lg:col-span-5 flex flex-col gap-6 ${activeTab === "profile" ? "flex" : "hidden lg:flex"}`}>
-          <div className="hidden lg:block">
-            <h2 className="text-2xl font-serif font-semibold">Your Ledger Stats</h2>
-            <p className="text-[#9A93A6] text-sm">Overall performance across all sessions.</p>
-          </div>
+        <div className={`flex flex-col gap-6 ${activeTab === "profile" ? "flex" : "hidden"}`}>
 
           {/* Premium User Profile Card */}
           <div className="bg-[var(--surface-raised)] border border-[var(--hairline)] rounded-2xl p-5 flex flex-col gap-4 shadow-xl">
@@ -495,8 +474,8 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
         </div>
       </div>
 
-      {/* Persistent Bottom Tab Navigation - Hidden on desktop */}
-      <div className="lg:hidden">
+      {/* Persistent Bottom Tab Navigation - Sticky at bottom */}
+      <div className="sticky bottom-0 bg-[var(--ink)] border-t border-white/5 z-30">
         <BottomNav active={activeTab} go={setActiveTab} />
       </div>
     </div>

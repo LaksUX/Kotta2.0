@@ -92,32 +92,20 @@ export default function AuthScreen({ onAuth }: AuthScreenProps) {
             </div>
             <div className="pn-display" style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-0.03em", color: "var(--cream)" }}>Kotta</div>
             <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 4 }}>
-              Keep track of who's rich on paper, who owes whom, and who's crying in the car. No real cash — just Banks!
+              Your Poker companion.
             </div>
           </div>
 
           <div className="pn-card">
-            <div className="pn-row" style={{ marginBottom: 16, gap: 8 }}>
-              <button
-                className={`pn-tag-pill ${mode === "login" ? "active" : ""}`}
-                onClick={() => {
-                  setMode("login");
-                  setError("");
-                }}
-                style={{ flex: 1, justifyContent: "center" }}
-              >
-                Log in
-              </button>
-              <button
-                className={`pn-tag-pill ${mode === "signup" ? "active" : ""}`}
-                onClick={() => {
-                  setMode("signup");
-                  setError("");
-                }}
-                style={{ flex: 1, justifyContent: "center" }}
-              >
-                Sign up
-              </button>
+            <div style={{ marginBottom: 20 }}>
+              <h2 className="pn-display text-xl font-serif font-bold text-[var(--cream)]" style={{ margin: 0 }}>
+                {mode === "login" ? "Log In" : "Create Profile"}
+              </h2>
+              <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 4, margin: "4px 0 0 0" }}>
+                {mode === "login" 
+                  ? "Enter your phone number and PIN to access the table." 
+                  : "Sign up with your phone number and a secure PIN."}
+              </p>
             </div>
 
             <form onSubmit={handleSubmit}>
@@ -204,6 +192,54 @@ export default function AuthScreen({ onAuth }: AuthScreenProps) {
                 )}
               </button>
             </form>
+
+            <div style={{ textAlign: "center", marginTop: 20, fontSize: 13 }}>
+              {mode === "login" ? (
+                <span style={{ color: "var(--muted)" }}>
+                  New to Kotta?{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode("signup");
+                      setError("");
+                    }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "var(--gold)",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      padding: 0,
+                      textDecoration: "underline"
+                    }}
+                  >
+                    Create a profile
+                  </button>
+                </span>
+              ) : (
+                <span style={{ color: "var(--muted)" }}>
+                  Already have a profile?{" "}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode("login");
+                      setError("");
+                    }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "var(--gold)",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      padding: 0,
+                      textDecoration: "underline"
+                    }}
+                  >
+                    Log in
+                  </button>
+                </span>
+              )}
+            </div>
           </div>
 
           <div style={{ textAlign: "center", marginTop: 24, fontSize: 12, color: "var(--muted)" }}>
