@@ -188,10 +188,9 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
 
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-[#9A93A6]">
-                        Buy-in: <strong className="pn-mono text-[#F3EDE4]">{game.initialBuyin} Banks</strong>
                         {game.ratio && (
-                          <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] bg-white/5 text-[#E8C77E] font-mono">
-                            {game.ratio} Blinds
+                          <span className="px-1.5 py-0.5 rounded text-[10px] bg-white/5 text-[#E8C77E] font-mono">
+                            Format: {game.ratio}
                           </span>
                         )}
                       </span>

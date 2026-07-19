@@ -92,7 +92,7 @@ export default function AuthScreen({ onAuth }: AuthScreenProps) {
             </div>
             <div className="pn-display" style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-0.03em", color: "var(--cream)" }}>Kotta</div>
             <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 4 }}>
-              Track buy-ins &amp; settle up. No currency, no cash — just Banks.
+              Keep track of who's rich on paper, who owes whom, and who's crying in the car. No real cash — just Banks!
             </div>
           </div>
 
@@ -207,7 +207,7 @@ export default function AuthScreen({ onAuth }: AuthScreenProps) {
           </div>
 
           <div style={{ textAlign: "center", marginTop: 24, fontSize: 12, color: "var(--muted)" }}>
-            💡 PIN accounts are preserved in your local session. Remember your PIN to re-login!
+            🤫 We store your PIN like we store your secrets: on this browser only. Lose your PIN, lose your bragging rights!
           </div>
         </div>
       </div>
