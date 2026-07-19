@@ -22,11 +22,10 @@ interface DashboardProps {
   onLogout: () => void;
   onSelectGame: (game: Game) => void;
   onOpenCreateGame: () => void;
-  onResetData?: () => void;
   onUpdateState?: (state: AppState) => void;
 }
 
-export default function Dashboard({ currentUser, appState, onLogout, onSelectGame, onOpenCreateGame, onResetData, onUpdateState }: DashboardProps) {
+export default function Dashboard({ currentUser, appState, onLogout, onSelectGame, onOpenCreateGame, onUpdateState }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<"games" | "profile">("games");
   const [gamesFilter, setGamesFilter] = useState<"live" | "past">("live");
   const [ledgerSubTab, setLedgerSubTab] = useState<"player" | "host">("player");

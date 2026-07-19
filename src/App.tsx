@@ -765,6 +765,18 @@ export default function App() {
     }
   };
 
+  const handleRestoreDemoState = async () => {
+    if (window.confirm("Are you sure you want to restore the default demo players, games, and records? This will overwrite your current data.")) {
+      const seedState = getSeedState();
+      await saveAppState(seedState);
+      setAppState(seedState);
+      await clearSessionStorage();
+      setSession(null);
+      setSelectedGame(null);
+      setIsCreatingGame(false);
+    }
+  };
+
   const handleSaveNewGame = async (newGame: Game) => {
     const nextGames = { ...appState.games, [newGame.id]: newGame };
     const nextState = { ...appState, games: nextGames };
@@ -794,7 +806,9 @@ export default function App() {
       <style>{GLOBAL_CSS}</style>
 
       {!currentUser ? (
-        <AuthScreen onAuth={handleAuthSuccess} />
+        <AuthScreen 
+          onAuth={handleAuthSuccess} 
+        />
       ) : (
         <div className="min-h-screen w-full bg-[#06080B] flex justify-center items-stretch">
           <div className="w-full max-w-[480px] h-screen flex flex-col bg-[var(--ink)] text-[var(--cream)] overflow-hidden relative">
@@ -890,7 +904,6 @@ export default function App() {
                   onLogout={handleLogout}
                   onSelectGame={setSelectedGame}
                   onOpenCreateGame={() => setIsCreatingGame(true)}
-                  onResetData={handleResetData}
                   onUpdateState={handleUpdateAppState}
                 />
               )}
