@@ -9,7 +9,7 @@ import {
   loadAppState, saveAppState, loadSession, saveSession,
   clearSessionStorage, hashPin
 } from "./lib/storage";
-import { Plus } from "lucide-react";
+import { Plus, Users, CheckCircle, AlertTriangle, Sparkles, X } from "lucide-react";
 import AuthScreen from "./components/AuthScreen";
 import Dashboard from "./components/Dashboard";
 import GameDetails from "./components/GameDetails";
@@ -379,6 +379,17 @@ const GLOBAL_CSS = `
       right: 20px;
     }
   }
+
+  @keyframes slideDown {
+    0% {
+      transform: translateY(-20px);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
 `;
 
 function getSeedState(): AppState {
@@ -461,6 +472,94 @@ function getSeedState(): AppState {
   return { users, games, invites, buyins };
 }
 
+interface AppNotification {
+  id: string;
+  message: string;
+  type: "invite" | "buyin_approved" | "buyin_rejected" | "game_closed";
+  timestamp: number;
+}
+
+function getNewNotifications(prev: AppState, next: AppState, userPhone: string): AppNotification[] {
+  const list: AppNotification[] = [];
+
+  // 1. Check for newly approved or rejected buy-ins
+  if (prev.buyins && next.buyins) {
+    Object.values(next.buyins).forEach((nextBuyin) => {
+      if (nextBuyin.phone !== userPhone) return;
+      const prevBuyin = prev.buyins[nextBuyin.id];
+      if (!prevBuyin) {
+        if (nextBuyin.status === "approved") {
+          const game = next.games[nextBuyin.gameId];
+          list.push({
+            id: `buyin_${nextBuyin.id}_approved`,
+            message: `Your buy-in of ${nextBuyin.amount} Banks for "${game?.title || "Game"}" has been approved!`,
+            type: "buyin_approved",
+            timestamp: Date.now()
+          });
+        }
+      } else if (prevBuyin.status === "pending" && nextBuyin.status !== "pending") {
+        const game = next.games[nextBuyin.gameId];
+        if (nextBuyin.status === "approved") {
+          list.push({
+            id: `buyin_${nextBuyin.id}_approved`,
+            message: `🎉 Your buy-in of ${nextBuyin.amount} Banks for "${game?.title || "Game"}" has been APPROVED!`,
+            type: "buyin_approved",
+            timestamp: Date.now()
+          });
+        } else if (nextBuyin.status === "rejected") {
+          list.push({
+            id: `buyin_${nextBuyin.id}_rejected`,
+            message: `⚠️ Your buy-in of ${nextBuyin.amount} Banks for "${game?.title || "Game"}" was rejected.`,
+            type: "buyin_rejected",
+            timestamp: Date.now()
+          });
+        }
+      }
+    });
+  }
+
+  // 2. Check for new invites
+  if (prev.invites && next.invites) {
+    Object.values(next.invites).forEach((nextInvite) => {
+      if (nextInvite.phone !== userPhone) return;
+      const prevInvite = prev.invites[nextInvite.id];
+      if (!prevInvite && nextInvite.rsvp === "pending") {
+        const game = next.games[nextInvite.gameId];
+        if (game && game.status !== "closed") {
+          list.push({
+            id: `invite_${nextInvite.id}`,
+            message: `🃏 You're invited to play in "${game.title}" by ${game.hostName}!`,
+            type: "invite",
+            timestamp: Date.now()
+          });
+        }
+      }
+    });
+  }
+
+  // 3. Check for recently settled games
+  if (prev.games && next.games) {
+    Object.values(next.games).forEach((nextGame) => {
+      const prevGame = prev.games[nextGame.id];
+      if (prevGame && prevGame.status === "active" && nextGame.status === "closed") {
+        const userInvite = Object.values(next.invites).find(
+          (i) => i.gameId === nextGame.id && i.phone === userPhone
+        );
+        if (userInvite?.rsvp === "yes" || nextGame.hostPhone === userPhone) {
+          list.push({
+            id: `settle_${nextGame.id}`,
+            message: `🏆 "${nextGame.title}" has been settled! Check your final score on the ledger.`,
+            type: "game_closed",
+            timestamp: Date.now()
+          });
+        }
+      }
+    });
+  }
+
+  return list;
+}
+
 export default function App() {
   const [appState, setAppState] = useState<AppState>({ users: {}, games: {}, invites: {}, buyins: {} });
   const [session, setSession] = useState<Session | null>(null);
@@ -468,6 +567,7 @@ export default function App() {
   const [isCreatingGame, setIsCreatingGame] = useState(false);
   const [loading, setLoading] = useState(true);
   const [pendingJoinGameId, setPendingJoinGameId] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
 
   // Read URL query parameters on load
   useEffect(() => {
@@ -528,6 +628,35 @@ export default function App() {
     init();
   }, []);
 
+  // Welcome pending invite notifications on login
+  useEffect(() => {
+    if (loading || !session) return;
+    const currentUser = appState.users[session.phone];
+    if (!currentUser) return;
+
+    const pendingInvites = (Object.values(appState.invites) as Invite[]).filter(
+      (i) => i.phone === currentUser.phone && i.rsvp === "pending"
+    );
+
+    if (pendingInvites.length > 0) {
+      const welcomeNotifs = pendingInvites.map((i) => {
+        const game = appState.games[i.gameId];
+        return {
+          id: `welcome_invite_${i.id}`,
+          message: `🃏 You have a pending invite to "${game?.title || "a poker game"}" by ${game?.hostName || "the host"}.`,
+          type: "invite" as const,
+          timestamp: Date.now()
+        };
+      });
+
+      setNotifications((current) => {
+        const prevIds = new Set(current.map((c) => c.id));
+        const filtered = welcomeNotifs.filter((n) => !prevIds.has(n.id));
+        return [...current, ...filtered];
+      });
+    }
+  }, [session, loading]);
+
   // Intelligent Polling Sync for Multi-Device and Smart Player Searching
   useEffect(() => {
     if (loading) return;
@@ -541,6 +670,16 @@ export default function App() {
           setAppState((prev) => {
             // Compare stringified JSON to check if changes occurred on other devices
             if (JSON.stringify(prev) !== JSON.stringify(nextState)) {
+              if (session) {
+                const newNotifs = getNewNotifications(prev, nextState, session.phone);
+                if (newNotifs.length > 0) {
+                  setNotifications((current) => {
+                    const prevIds = new Set(current.map((c) => c.id));
+                    const filtered = newNotifs.filter((n) => !prevIds.has(n.id));
+                    return [...current, ...filtered];
+                  });
+                }
+              }
               // If selectedGame is currently active, sync its values
               if (selectedGame) {
                 const refreshedGame = nextState.games[selectedGame.id];
@@ -564,7 +703,7 @@ export default function App() {
       active = false;
       clearInterval(timer);
     };
-  }, [loading, selectedGame]);
+  }, [loading, selectedGame, session]);
 
   // Update State Trigger and Synchronize selected game if visible
   const handleUpdateAppState = async (nextState: AppState) => {
@@ -639,6 +778,73 @@ export default function App() {
         <div className="min-h-screen w-full bg-[#06080B] flex justify-center items-stretch">
           <div className="w-full max-w-[480px] h-screen flex flex-col bg-[var(--ink)] text-[var(--cream)] overflow-hidden relative">
             
+            {/* Sliding In-App Notifications Container */}
+            {notifications.length > 0 && (
+              <div 
+                style={{
+                  position: "absolute",
+                  top: 24,
+                  left: 16,
+                  right: 16,
+                  zIndex: 9999,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                  pointerEvents: "none"
+                }}
+              >
+                {notifications.slice(-3).map((notif) => (
+                  <div
+                    key={notif.id}
+                    style={{
+                      background: "rgba(20, 26, 36, 0.98)",
+                      border: "1px solid var(--gold)",
+                      boxShadow: "0 12px 32px rgba(0,0,0,0.6)",
+                      backdropFilter: "blur(12px)",
+                      padding: "12px 14px",
+                      borderRadius: 12,
+                      display: "flex",
+                      alignItems: "flex-start",
+                      justifyContent: "space-between",
+                      gap: 10,
+                      pointerEvents: "auto",
+                      animation: "slideDown 0.3s cubic-bezier(0.16, 1, 0.3, 1)"
+                    }}
+                  >
+                    <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                      <div style={{ marginTop: 2, color: "var(--gold)" }}>
+                        {notif.type === "invite" && <Users size={16} />}
+                        {notif.type === "buyin_approved" && <CheckCircle size={16} style={{ color: "var(--success)" }} />}
+                        {notif.type === "buyin_rejected" && <AlertTriangle size={16} style={{ color: "var(--danger)" }} />}
+                        {notif.type === "game_closed" && <Sparkles size={16} />}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ fontSize: 13, fontWeight: 500, margin: 0, color: "var(--cream)", lineHeight: 1.4 }}>
+                          {notif.message}
+                        </p>
+                        <span style={{ fontSize: 10, color: "var(--muted)", marginTop: 2, display: "block" }}>
+                          Just now
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setNotifications((prev) => prev.filter((p) => p.id !== notif.id))}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "var(--muted)",
+                        cursor: "pointer",
+                        padding: 2,
+                        marginTop: -2
+                      }}
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col overflow-hidden h-full">
               {selectedGame ? (
