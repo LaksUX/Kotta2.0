@@ -938,7 +938,7 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
                             }}
                           >
                             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                              <Avatar phone={b.phone} name={user?.name || b.phone} size={32} avatar={user?.avatar} />
+                              <Avatar phone={b.phone} name={user?.name || b.phone} size={32} />
                               <div>
                                 <div style={{ fontSize: 13, fontWeight: 500 }}>{user?.name || b.phone}</div>
                                 <div className="pn-mono" style={{ fontSize: 11, color: "var(--muted)" }}>{b.amount} Banks</div>
@@ -1115,7 +1115,7 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                           {/* Name only - no phone number, no raw bank display on the right */}
                           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                            <Avatar phone={p.phone} name={p.name} size={32} avatar={p.avatar} />
+                            <Avatar phone={p.phone} name={p.name} size={32} />
                             <div style={{ fontSize: 14, fontWeight: 500, color: "var(--cream)" }}>
                               {p.name} {p.phone === game.hostPhone && "👑"}
                             </div>
@@ -1320,7 +1320,7 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <Avatar phone={p.phone} name={p.name} size={32} avatar={p.avatar} />
+                      <Avatar phone={p.phone} name={p.name} size={32} />
                       <div>
                         <span style={{ fontSize: 13, fontWeight: 600 }}>{p.name}</span>
                         <div className="pn-mono" style={{ fontSize: 11, color: "var(--muted)" }}>
@@ -1479,7 +1479,7 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
                       }}
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <Avatar phone={p.phone} name={p.name} size={32} avatar={p.avatar} />
+                        <Avatar phone={p.phone} name={p.name} size={32} />
                         <div>
                           <span style={{ fontSize: 14, fontWeight: 500 }}>{p.name}</span>
                           <div style={{ fontSize: 11, color: "var(--muted)" }}>

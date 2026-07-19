@@ -7,7 +7,6 @@ export interface User {
   phone: string;
   name: string;
   pinHash: string;
-  avatar?: string;
 }
 
 export type GameStatus = "draft" | "active" | "closed";

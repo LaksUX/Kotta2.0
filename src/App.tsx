@@ -637,6 +637,42 @@ export default function App() {
     init();
   }, []);
 
+  // Request browser notification permission when user is logged in
+  useEffect(() => {
+    if (session && typeof window !== "undefined" && "Notification" in window) {
+      if (window.Notification.permission === "default") {
+        window.Notification.requestPermission().catch(() => {});
+      }
+    }
+  }, [session]);
+
+  // Unified notifications adder that triggers native browser notifications for invites
+  const addAppNotifications = (newNotifs: AppNotification[]) => {
+    if (newNotifs.length === 0) return;
+    setNotifications((current) => {
+      const prevIds = new Set(current.map((c) => c.id));
+      const filtered = newNotifs.filter((n) => !prevIds.has(n.id));
+
+      if (filtered.length > 0 && typeof window !== "undefined" && "Notification" in window) {
+        if (window.Notification.permission === "granted") {
+          filtered.forEach((notif) => {
+            if (notif.type === "invite") {
+              try {
+                new window.Notification("♣️ Kotta Invitation", {
+                  body: notif.message
+                });
+              } catch (e) {
+                console.error("Browser notification failed", e);
+              }
+            }
+          });
+        }
+      }
+
+      return [...current, ...filtered];
+    });
+  };
+
   // Welcome invite notifications on login (both pending invites and host direct additions)
   useEffect(() => {
     if (loading || !session) return;
@@ -670,11 +706,7 @@ export default function App() {
     }).filter(Boolean) as AppNotification[];
 
     if (welcomeNotifs.length > 0) {
-      setNotifications((current) => {
-        const prevIds = new Set(current.map((c) => c.id));
-        const filtered = welcomeNotifs.filter((n) => !prevIds.has(n.id));
-        return [...current, ...filtered];
-      });
+      addAppNotifications(welcomeNotifs);
     }
   }, [session, loading]);
 
@@ -694,11 +726,7 @@ export default function App() {
               if (session) {
                 const newNotifs = getNewNotifications(prev, nextState, session.phone);
                 if (newNotifs.length > 0) {
-                  setNotifications((current) => {
-                    const prevIds = new Set(current.map((c) => c.id));
-                    const filtered = newNotifs.filter((n) => !prevIds.has(n.id));
-                    return [...current, ...filtered];
-                  });
+                  addAppNotifications(newNotifs);
                 }
               }
               // If selectedGame is currently active, sync its values
