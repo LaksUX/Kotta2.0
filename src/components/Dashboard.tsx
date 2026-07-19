@@ -14,6 +14,7 @@ import {
 import { AppState, Game, Session, User } from "../types";
 import { computePlayerLedger, computeHostLedger, fmtDateTime } from "../lib/storage";
 import { Avatar, RsvpBadge, ChipHero, EmptyState, BottomNav } from "./Atoms";
+import HoysalaLogo from "./HoysalaLogo";
 
 interface DashboardProps {
   currentUser: User;
@@ -50,10 +51,11 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
     <div className="pn-root">
       {/* App Header styled like the High Density Felt Board */}
       <div className="pn-header flex items-center justify-between px-4 lg:px-8 h-20 border-b border-white/5 bg-[var(--ink)]">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <div className="lg:hidden">
             <Avatar phone={currentUser.phone} name={currentUser.name} size={36} />
           </div>
+          <HoysalaLogo size={38} />
           <div className="pn-header-title">
             <h1 className="text-xl lg:text-2xl font-serif font-semibold tracking-tight">The Felt Board</h1>
             <div className="lg:hidden text-xs text-muted">Welcome back, {currentUser.name}</div>

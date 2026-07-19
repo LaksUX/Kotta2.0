@@ -14,6 +14,7 @@ import AuthScreen from "./components/AuthScreen";
 import Dashboard from "./components/Dashboard";
 import GameDetails from "./components/GameDetails";
 import CreateGame from "./components/CreateGame";
+import HoysalaLogo from "./components/HoysalaLogo";
 
 const GLOBAL_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500..700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
@@ -612,22 +613,13 @@ export default function App() {
             
             {/* Left Navigation Rail - Desktop only */}
             <nav className="hidden lg:flex w-20 border-r border-white/10 flex-col items-center py-8 gap-8 bg-[var(--ink)] shrink-0">
-              {/* Premium Logo / Crown Shield Emblem */}
+              {/* Premium Hoysala Art-Inspired Logo */}
               <div 
-                className="w-12 h-12 rounded-xl flex items-center justify-center cursor-pointer relative group transition-transform duration-300 hover:scale-105"
-                style={{
-                  background: "linear-gradient(135deg, var(--gold) 0%, var(--gold-soft) 100%)",
-                  boxShadow: "0 4px 12px rgba(212, 175, 55, 0.3)"
-                }}
+                className="cursor-pointer transition-transform duration-300 hover:scale-110"
                 onClick={() => { setSelectedGame(null); setIsCreatingGame(false); }}
                 title="Kotta Felt Board"
               >
-                {/* SVG Crown Shield Inside */}
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2L4 5V11C4 16.55 7.42 21.74 12 23C16.58 21.74 20 16.55 20 11V5L12 2Z" fill="var(--ink)" />
-                  <path d="M8 9L10 11L12 7L14 11L16 9" stroke="var(--gold-soft)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  <circle cx="12" cy="14" r="2" fill="var(--gold-soft)" />
-                </svg>
+                <HoysalaLogo size={48} />
               </div>
               
               <div className="flex flex-col gap-6">
