@@ -269,6 +269,32 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
     onUpdateState({ ...appState, invites: nextInvites, buyins: nextBuyins });
     setSearchQuery("");
     setManualBuyinAmount(game.initialBuyin);
+    setToastMsg(`✅ Added ${name} directly to the table with buy-in.`);
+  }
+
+  function handleInviteExistingPlayer(phone: string, name: string) {
+    setManualAddError("");
+    const cleanPhone = phone.replace(/\D/g, "");
+    if (!cleanPhone) return;
+
+    const nextInvites = { ...appState.invites };
+    const existingInvite = Object.values(nextInvites).find(
+      (i) => i.gameId === game.id && i.phone === cleanPhone
+    );
+
+    const inviteId = existingInvite ? existingInvite.id : genId("invite");
+    nextInvites[inviteId] = {
+      id: inviteId,
+      gameId: game.id,
+      phone: cleanPhone,
+      rsvp: "pending",
+      updatedAt: Date.now()
+    };
+
+    onUpdateState({ ...appState, invites: nextInvites });
+    setSearchQuery("");
+    setManualBuyinAmount(game.initialBuyin);
+    setToastMsg(`✉️ Sent RSVP invitation to ${name}!`);
   }
 
   function handleCreateAndAddGuest() {
@@ -655,14 +681,24 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
                                 <span style={{ fontWeight: 600, color: "var(--cream)" }}>{u.name}</span>
                                 <span style={{ fontSize: 10, color: "var(--muted)", marginLeft: 6 }}>({u.phone})</span>
                               </div>
-                              <button
-                                type="button"
-                                className="pn-btn pn-btn-primary pn-btn-sm"
-                                style={{ padding: "2px 8px", fontSize: 10, height: 22, width: "auto" }}
-                                onClick={() => handleAddExistingPlayer(u.phone, u.name)}
-                              >
-                                + Add &amp; Buy-in
-                              </button>
+                              <div style={{ display: "flex", gap: 6 }}>
+                                <button
+                                  type="button"
+                                  className="pn-btn pn-btn-ghost pn-btn-sm"
+                                  style={{ padding: "2px 8px", fontSize: 10, height: 22, width: "auto", margin: 0, color: "var(--gold)" }}
+                                  onClick={() => handleInviteExistingPlayer(u.phone, u.name)}
+                                >
+                                  ✉️ Invite
+                                </button>
+                                <button
+                                  type="button"
+                                  className="pn-btn pn-btn-primary pn-btn-sm"
+                                  style={{ padding: "2px 8px", fontSize: 10, height: 22, width: "auto", margin: 0 }}
+                                  onClick={() => handleAddExistingPlayer(u.phone, u.name)}
+                                >
+                                  + Add &amp; Buy-in
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -791,6 +827,25 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
                           </span>
 
                           <div style={{ display: "flex", gap: 3 }}>
+                            <button
+                              type="button"
+                              className={`pn-tag-pill ${currentRsvp === "pending" && invite ? "active" : ""}`}
+                              style={{ fontSize: 9, padding: "1px 4px", margin: 0 }}
+                              onClick={() => {
+                                const nextInvites = { ...appState.invites };
+                                const inviteId = invite ? invite.id : genId("invite");
+                                nextInvites[inviteId] = {
+                                  id: inviteId,
+                                  gameId: game.id,
+                                  phone: user.phone,
+                                  rsvp: "pending",
+                                  updatedAt: Date.now()
+                                };
+                                onUpdateState({ ...appState, invites: nextInvites });
+                              }}
+                            >
+                              Invite
+                            </button>
                             <button
                               type="button"
                               className={`pn-tag-pill ${currentRsvp === "yes" ? "active" : ""}`}
