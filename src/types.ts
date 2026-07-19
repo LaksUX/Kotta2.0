@@ -28,6 +28,7 @@ export interface Game {
   status: GameStatus;
   createdAt: number;
   closedAt?: number;
+  liveCashouts?: Record<string, number>;
   results?: Record<string, {
     cashout: number;
     buyin: number;

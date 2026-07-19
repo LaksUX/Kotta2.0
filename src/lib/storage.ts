@@ -234,15 +234,25 @@ export function computeGameFinancials(appState: AppState, game: Game, cashoutMap
   const buyins = Object.values(appState.buyins).filter((b) => b.gameId === game.id && b.status === "approved");
   const buyinFor = (phone: string) => buyins.filter((b) => b.phone === phone).reduce((s, b) => s + b.amount, 0);
 
+  const getCashout = (phone: string) => {
+    if (cashoutMap && cashoutMap[phone] !== undefined) {
+      return Number(cashoutMap[phone]);
+    }
+    if (game.liveCashouts && game.liveCashouts[phone] !== undefined) {
+      return Number(game.liveCashouts[phone]);
+    }
+    return buyinFor(phone); // Default to buy-in (break-even)
+  };
+
   const totalBuyins = players.reduce((s, p) => s + buyinFor(p.phone), 0);
-  const actualCashoutSum = players.reduce((s, p) => s + (Number(cashoutMap[p.phone]) || 0), 0);
+  const actualCashoutSum = players.reduce((s, p) => s + getCashout(p.phone), 0);
   const expectedPool = totalBuyins - (game.rake || 0);
   const variance = expectedPool - actualCashoutSum;
   const effectiveRake = (game.rake || 0) + variance;
 
   const nets = players.map((p) => ({
     phone: p.phone,
-    net: (Number(cashoutMap[p.phone]) || 0) - buyinFor(p.phone),
+    net: getCashout(p.phone) - buyinFor(p.phone),
     buy: buyinFor(p.phone)
   }));
 

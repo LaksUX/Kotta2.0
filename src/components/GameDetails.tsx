@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   ChevronLeft, Calendar, MapPin, Users, Coins, Check, X,
   Plus, AlertTriangle, Play, Save, RefreshCw, Sparkles, TrendingUp
@@ -84,16 +84,58 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
   // Close Game / Cash Out Flow state
   const [isClosing, setIsClosing] = useState(false);
   const [gameTab, setGameTab] = useState<"setup" | "live">("setup");
-  const [cashoutMap, setCashoutMap] = useState<Record<string, number>>(() => {
-    const initial: Record<string, number> = {};
+  const [cashoutMap, setCashoutMap] = useState<Record<string, number>>({});
+
+  // Reactive Sync of cashoutMap with game.liveCashouts & player buyins
+  useEffect(() => {
+    const updated = { ...cashoutMap };
+    let changed = false;
     players.forEach((p) => {
-      // Default to initial buy-in amount if no value set
       const playerBuyins = gameBuyins.filter((b) => b.phone === p.phone && b.status === "approved");
       const totalBuy = playerBuyins.reduce((s, b) => s + b.amount, 0);
-      initial[p.phone] = totalBuy;
+      
+      const liveVal = game.liveCashouts?.[p.phone];
+      const currentVal = updated[p.phone];
+      
+      if (liveVal !== undefined) {
+        if (currentVal !== liveVal) {
+          updated[p.phone] = liveVal;
+          changed = true;
+        }
+      } else if (currentVal === undefined) {
+        updated[p.phone] = totalBuy;
+        changed = true;
+      }
     });
-    return initial;
-  });
+    if (changed) {
+      setCashoutMap(updated);
+    }
+  }, [game.liveCashouts, players, gameBuyins]);
+
+  // Helper selector to list users who have ever played in any Kotta game (excluding current players)
+  const getPreviouslyPlayedUsers = () => {
+    const playedPhones = new Set<string>();
+    Object.values(appState.games).forEach((g) => {
+      Object.values(appState.buyins).forEach((b) => {
+        if (b.gameId === g.id && b.status === "approved") {
+          playedPhones.add(b.phone);
+        }
+      });
+      Object.values(appState.invites).forEach((i) => {
+        if (i.gameId === g.id && i.rsvp === "yes") {
+          playedPhones.add(i.phone);
+        }
+      });
+    });
+    
+    // exclude host and already added players in current game
+    playedPhones.delete(game.hostPhone);
+    players.forEach((p) => playedPhones.delete(p.phone));
+
+    return Array.from(playedPhones)
+      .map((phone) => appState.users[phone])
+      .filter(Boolean);
+  };
 
   // RSVP actions
   function handleRsvp(status: "yes" | "no" | "maybe") {
@@ -402,7 +444,7 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
               }}
               onClick={() => setGameTab("live")}
             >
-              <Coins size={15} /> Live &amp; Settle
+              <Coins size={15} /> Live
             </button>
           </div>
         )}
@@ -468,33 +510,101 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
                 </button>
               </div>
 
-              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                <button
-                  type="button"
-                  className="pn-btn pn-btn-ghost pn-btn-sm"
-                  style={{ flex: 1, fontSize: 11, padding: "6px 8px", background: "rgba(255, 255, 255, 0.02)" }}
-                  onClick={() => {
-                    const url = `${window.location.origin}${window.location.pathname}?joinGame=${game.id}`;
-                    const text = `♠️ Join my poker game on Kotta!\n\n🏆 Game: ${game.title}\n📅 Date: ${fmtDateTime(game.date, game.time)}\n📍 Venue: ${game.venue}\n🪙 Buy-in: ${game.initialBuyin} Banks\n\n👉 Join & RSVP here: ${url}`;
-                    navigator.clipboard.writeText(text);
-                    alert("📋 Custom invitation message copied to clipboard! Share it in your WhatsApp group.");
-                  }}
-                >
-                  Copy Full Invite Text
-                </button>
-                
-                <button
-                  type="button"
-                  className="pn-btn pn-btn-felt pn-btn-sm"
-                  style={{ flex: 1, fontSize: 11, padding: "6px 8px" }}
-                  onClick={() => {
-                    const url = `${window.location.origin}${window.location.pathname}?joinGame=${game.id}`;
-                    const text = encodeURIComponent(`♠️ Join my poker game on Kotta!\n\n🏆 Game: ${game.title}\n📅 Date: ${fmtDateTime(game.date, game.time)}\n📍 Venue: ${game.venue}\n🪙 Buy-in: ${game.initialBuyin} Banks\n\n👉 Join & RSVP here: ${url}`);
-                    window.open(`https://wa.me/?text=${text}`, "_blank");
-                  }}
-                >
-                  WhatsApp Share
-                </button>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8 }}>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    type="button"
+                    className="pn-btn pn-btn-ghost pn-btn-sm"
+                    style={{ flex: 1, fontSize: 11, padding: "6px 8px", background: "rgba(255, 255, 255, 0.02)" }}
+                    onClick={() => {
+                      const url = `${window.location.origin}${window.location.pathname}?joinGame=${game.id}`;
+                      const text = `♠️ Join my poker game on Kotta!\n\n🏆 Game: ${game.title}\n📅 Date: ${fmtDateTime(game.date, game.time)}\n📍 Venue: ${game.venue}\n🪙 Buy-in: ${game.initialBuyin} Banks\n\n👉 Join & RSVP here: ${url}`;
+                      navigator.clipboard.writeText(text);
+                      alert("📋 Custom invitation message copied to clipboard! Share it in your WhatsApp group.");
+                    }}
+                  >
+                    Copy Full Invite Text
+                  </button>
+                  
+                  <button
+                    type="button"
+                    className="pn-btn pn-btn-felt pn-btn-sm"
+                    style={{ flex: 1, fontSize: 11, padding: "6px 8px" }}
+                    onClick={() => {
+                      const url = `${window.location.origin}${window.location.pathname}?joinGame=${game.id}`;
+                      const text = encodeURIComponent(`♠️ Join my poker game on Kotta!\n\n🏆 Game: ${game.title}\n📅 Date: ${fmtDateTime(game.date, game.time)}\n📍 Venue: ${game.venue}\n🪙 Buy-in: ${game.initialBuyin} Banks\n\n👉 Join & RSVP here: ${url}`);
+                      window.open(`https://wa.me/?text=${text}`, "_blank");
+                    }}
+                  >
+                    WhatsApp Share
+                  </button>
+                </div>
+
+                {isHost && (
+                  <button
+                    type="button"
+                    className="pn-btn pn-btn-primary pn-btn-sm"
+                    style={{ fontSize: 11, padding: "8px 12px", width: "100%", gap: 6, display: "flex", alignItems: "center", justifyContent: "center" }}
+                    onClick={() => {
+                      const url = `${window.location.origin}${window.location.pathname}?joinGame=${game.id}`;
+                      
+                      const goingNames: string[] = ["👑 " + game.hostName + " (Host)"];
+                      goingInvites.forEach((i) => {
+                        const u = appState.users[i.phone];
+                        if (u && u.phone !== game.hostPhone) {
+                          goingNames.push(u.name);
+                        }
+                      });
+
+                      const maybeNames: string[] = [];
+                      maybeInvites.forEach((i) => {
+                        const u = appState.users[i.phone];
+                        if (u) {
+                          maybeNames.push(u.name);
+                        }
+                      });
+
+                      const noNames: string[] = [];
+                      noInvites.forEach((i) => {
+                        const u = appState.users[i.phone];
+                        if (u) {
+                          noNames.push(u.name);
+                        }
+                      });
+
+                      let msg = `♠️ *RSVP LIST: ${game.title.toUpperCase()}*\n`;
+                      msg += `📅 *Date:* ${fmtDateTime(game.date, game.time)}\n`;
+                      msg += `📍 *Venue:* ${game.venue}\n`;
+                      msg += `🪙 *Initial Buy-in:* ${game.initialBuyin} Banks\n\n`;
+
+                      msg += `✅ *GOING (${goingNames.length}):*\n`;
+                      goingNames.forEach((n, idx) => {
+                        msg += `${idx + 1}. ${n}\n`;
+                      });
+
+                      if (maybeNames.length > 0) {
+                        msg += `\n❓ *MAYBE (${maybeNames.length}):*\n`;
+                        maybeNames.forEach((n) => {
+                          msg += `- ${n}\n`;
+                        });
+                      }
+
+                      if (noNames.length > 0) {
+                        msg += `\n❌ *NOT GOING (${noNames.length}):*\n`;
+                        noNames.forEach((n) => {
+                          msg += `- ${n}\n`;
+                        });
+                      }
+
+                      msg += `\n👉 *Join & RSVP here:* ${url}`;
+
+                      const text = encodeURIComponent(msg);
+                      window.open(`https://wa.me/?text=${text}`, "_blank");
+                    }}
+                  >
+                    💬 Share RSVP List to WhatsApp
+                  </button>
+                )}
               </div>
             </div>
 
@@ -604,6 +714,34 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
                               </button>
                             </div>
                           ))}
+                        </div>
+                      )}
+
+                      {/* Previously Played Quick Add */}
+                      {searchQuery.trim() === "" && (
+                        <div style={{ marginTop: 8 }}>
+                          <span style={{ fontSize: 11, color: "var(--gold-soft)", fontWeight: 500, display: "block", marginBottom: 6 }}>
+                            ⏱️ Quick Add Previous Players:
+                          </span>
+                          {getPreviouslyPlayedUsers().length === 0 ? (
+                            <span style={{ fontSize: 11, color: "var(--muted)", fontStyle: "italic" }}>
+                              No other previous players remembered yet.
+                            </span>
+                          ) : (
+                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", maxHeight: 90, overflowY: "auto", padding: "2px" }}>
+                              {getPreviouslyPlayedUsers().map((u) => (
+                                <button
+                                  key={u.phone}
+                                  type="button"
+                                  className="pn-tag-pill"
+                                  style={{ fontSize: 11, padding: "4px 8px", margin: 0, background: "rgba(255, 255, 255, 0.03)" }}
+                                  onClick={() => handleAddExistingPlayer(u.phone, u.name)}
+                                >
+                                  👤 {u.name}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
 
@@ -873,47 +1011,18 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
                     </button>
                   </div>
 
-                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                    <button
-                      type="button"
-                      className="pn-tag-pill"
-                      style={{ fontSize: 11, padding: "4px 10px", margin: 0 }}
-                      onClick={() => setCustomBuyinAmount(game.initialBuyin)}
-                    >
-                      Initial ({game.initialBuyin})
-                    </button>
-                    <button
-                      type="button"
-                      className="pn-tag-pill"
-                      style={{ fontSize: 11, padding: "4px 10px", margin: 0 }}
-                      onClick={() => setCustomBuyinAmount(Math.floor(game.initialBuyin / 2) || 1)}
-                    >
-                      Half ({Math.floor(game.initialBuyin / 2) || 1})
-                    </button>
-                    <button
-                      type="button"
-                      className="pn-tag-pill"
-                      style={{ fontSize: 11, padding: "4px 10px", margin: 0 }}
-                      onClick={() => setCustomBuyinAmount(2 * game.initialBuyin)}
-                    >
-                      Double ({2 * game.initialBuyin})
-                    </button>
-                    <button
-                      type="button"
-                      className="pn-tag-pill"
-                      style={{ fontSize: 11, padding: "4px 10px", margin: 0 }}
-                      onClick={() => setCustomBuyinAmount(prev => prev + 25)}
-                    >
-                      +25
-                    </button>
-                    <button
-                      type="button"
-                      className="pn-tag-pill"
-                      style={{ fontSize: 11, padding: "4px 10px", margin: 0 }}
-                      onClick={() => setCustomBuyinAmount(prev => prev + 100)}
-                    >
-                      +100
-                    </button>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {[1, 3, 5, 10].map((amt) => (
+                      <button
+                        key={amt}
+                        type="button"
+                        className="pn-tag-pill"
+                        style={{ fontSize: 11, padding: "6px 14px", margin: 0, flex: 1, textAlign: "center", background: "rgba(255, 255, 255, 0.03)" }}
+                        onClick={() => setCustomBuyinAmount(amt)}
+                      >
+                        {amt}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
@@ -935,47 +1044,139 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
             {/* Players and Buyins List */}
             <div className="pn-card" style={{ marginBottom: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                <span className="pn-label" style={{ margin: 0 }}>Felt Ledger ({players.length} players)</span>
-                <span className="pn-mono" style={{ fontSize: 13, color: "var(--muted)" }}>
-                  Pot: {gameBuyins.filter((b) => b.status === "approved").reduce((s, b) => s + b.amount, 0)} Banks
-                </span>
+                <span className="pn-label" style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Ledger ({players.length} players)</span>
               </div>
+
+              {/* Overall Players Buying and Cashouts Summary */}
+              {players.length > 0 && (
+                <div style={{ marginBottom: 16, background: "rgba(255,255,255,0.02)", padding: 10, borderRadius: 8, border: "1px solid rgba(255,255,255,0.05)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
+                    <span style={{ color: "var(--muted)" }}>Overall Buy-ins:</span>
+                    <span className="pn-mono font-semibold" style={{ color: "var(--gold-soft)" }}>{financials.totalBuyins} Banks</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: isHost ? 4 : 0 }}>
+                    <span style={{ color: "var(--muted)" }}>Overall Cashouts:</span>
+                    <span className="pn-mono font-semibold" style={{ color: "var(--cream)" }}>{financials.actualCashoutSum} Banks</span>
+                  </div>
+
+                  {isHost && (
+                    <>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
+                        <span style={{ color: "var(--gold-soft)" }}>Rake (Hidden to others):</span>
+                        <span className="pn-mono font-semibold" style={{ color: "var(--gold-soft)" }}>{game.rake} Banks</span>
+                      </div>
+                      <div className="pn-divider" style={{ margin: "6px 0" }} />
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 4 }}>
+                        <span style={{ color: "var(--muted)" }}>Target Cashout Pool:</span>
+                        <span className="pn-mono font-semibold" style={{ color: "var(--cream)" }}>{financials.expectedPool} Banks</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
+                        <span style={{ color: "var(--muted)", display: "flex", alignItems: "center", gap: 4 }}>
+                          Variance:
+                          {Math.abs(financials.variance) > 0.01 && (
+                            <AlertTriangle size={12} color="var(--danger)" />
+                          )}
+                        </span>
+                        <span className="pn-mono font-semibold" style={{ color: Math.abs(financials.variance) <= 0.01 ? "var(--success)" : "var(--danger)" }}>
+                          {financials.variance > 0 ? `+${round2(financials.variance)}` : round2(financials.variance)} Banks
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
 
               {players.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "16px 0", color: "var(--muted)", fontSize: 13 }}>
                   No confirmed players yet. Request buy-in above!
                 </div>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   {players.map((p) => {
                     const playerBuyins = gameBuyins.filter((b) => b.phone === p.phone && b.status === "approved");
                     const totalBuy = playerBuyins.reduce((s, b) => s + b.amount, 0);
+                    const currentCashout = cashoutMap[p.phone] !== undefined ? cashoutMap[p.phone] : totalBuy;
+                    const diff = currentCashout - totalBuy;
+                    const canEditCashout = isHost || p.phone === currentUser.phone;
+
                     return (
                       <div
                         key={p.phone}
                         style={{
-                          display: "flex", flexDirection: "column", gap: 6,
-                          borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: 10
+                          display: "flex", flexDirection: "column", gap: 8,
+                          borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 12
                         }}
                       >
-                        <div style={{ display: "flex", alignItems: "center", justify: "space-between" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                          {/* Name only - no phone number, no raw bank display on the right */}
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                             <div
                               style={{
-                                width: 8, height: 8, borderRadius: "50%",
+                                width: 6, height: 6, borderRadius: "50%",
                                 background: p.phone === game.hostPhone ? "var(--gold)" : "var(--felt-soft)"
                               }}
                             />
-                            <div>
-                              <div style={{ fontSize: 14, fontWeight: 500, color: "var(--cream)" }}>
-                                {p.name} {p.phone === game.hostPhone && "👑"}
-                              </div>
-                              <div style={{ fontSize: 11, color: "var(--muted)" }}>{p.phone}</div>
+                            <div style={{ fontSize: 14, fontWeight: 500, color: "var(--cream)" }}>
+                              {p.name} {p.phone === game.hostPhone && "👑"}
                             </div>
                           </div>
 
-                          <div className="pn-mono text-sm font-semibold text-[#E8C77E]">
-                            {totalBuy} Banks
+                          {/* Difference Display */}
+                          <div
+                            className="pn-mono text-xs font-semibold"
+                            style={{
+                              color: diff > 0.001 ? "var(--success)" : diff < -0.001 ? "var(--danger)" : "var(--muted)",
+                              background: diff > 0.001 ? "rgba(111,169,125,0.1)" : diff < -0.001 ? "rgba(193,84,75,0.1)" : "rgba(255,255,255,0.02)",
+                              padding: "2px 8px",
+                              borderRadius: 6
+                            }}
+                          >
+                            {diff > 0.001 ? `+${round2(diff)}` : diff < -0.001 ? `${round2(diff)}` : "0"} Banks
+                          </div>
+                        </div>
+
+                        {/* Buy-in, Cashout, and Diff details */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(255,255,255,0.015)", padding: "6px 10px", borderRadius: 8 }}>
+                          <div style={{ flex: 1 }}>
+                            <span style={{ fontSize: 10, color: "var(--muted)", display: "block", textTransform: "uppercase" }}>Buy-in</span>
+                            <span className="pn-mono" style={{ fontSize: 12, fontWeight: 500 }}>{totalBuy} Banks</span>
+                          </div>
+
+                          <div style={{ flex: 1.5 }}>
+                            <span style={{ fontSize: 10, color: "var(--muted)", display: "block", textTransform: "uppercase", marginBottom: 2 }}>Cash Out</span>
+                            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                              <input
+                                className="pn-input pn-mono"
+                                type="number"
+                                step="0.1"
+                                min={0}
+                                disabled={!canEditCashout}
+                                value={cashoutMap[p.phone] !== undefined ? cashoutMap[p.phone] : ""}
+                                placeholder={String(totalBuy)}
+                                onChange={(e) => {
+                                  const val = e.target.value === "" ? 0 : parseFloat(e.target.value);
+                                  const cleanVal = isNaN(val) ? 0 : Math.max(0, val);
+                                  
+                                  const nextMap = { ...cashoutMap, [p.phone]: cleanVal };
+                                  setCashoutMap(nextMap);
+
+                                  const nextGames = { ...appState.games };
+                                  const currentGame = nextGames[game.id];
+                                  if (currentGame) {
+                                    currentGame.liveCashouts = {
+                                      ...(currentGame.liveCashouts || {}),
+                                      [p.phone]: cleanVal
+                                    };
+                                    onUpdateState({ ...appState, games: nextGames });
+                                  }
+                                }}
+                                style={{
+                                  width: "100%", padding: "4px 6px", fontSize: 12, height: 26, textAlign: "right",
+                                  background: canEditCashout ? "var(--surface-raised)" : "rgba(255,255,255,0.01)",
+                                  border: canEditCashout ? "1px solid rgba(212,162,76,0.2)" : "1px solid transparent"
+                                }}
+                              />
+                            </div>
                           </div>
                         </div>
 
