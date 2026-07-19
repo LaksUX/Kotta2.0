@@ -9,6 +9,7 @@ import {
   Plus, AlertTriangle, Play, Save, RefreshCw, Sparkles, TrendingUp
 } from "lucide-react";
 import { AppState, Game, Invite, Buyin, User } from "../types";
+import { Avatar } from "./Atoms";
 import {
   fmtDateTime, getConfirmedPlayers, computeGameFinancials,
   genId, round2
@@ -936,9 +937,12 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
                               background: "var(--surface-raised)", padding: "8px 10px", borderRadius: 8
                             }}
                           >
-                            <div>
-                              <div style={{ fontSize: 13, fontWeight: 500 }}>{user?.name || b.phone}</div>
-                              <div className="pn-mono" style={{ fontSize: 11, color: "var(--muted)" }}>{b.amount} Banks</div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <Avatar phone={b.phone} name={user?.name || b.phone} size={32} avatar={user?.avatar} />
+                              <div>
+                                <div style={{ fontSize: 13, fontWeight: 500 }}>{user?.name || b.phone}</div>
+                                <div className="pn-mono" style={{ fontSize: 11, color: "var(--muted)" }}>{b.amount} Banks</div>
+                              </div>
                             </div>
                             <div style={{ display: "flex", gap: 6 }}>
                               <button
@@ -1110,13 +1114,8 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
                       >
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                           {/* Name only - no phone number, no raw bank display on the right */}
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <div
-                              style={{
-                                width: 6, height: 6, borderRadius: "50%",
-                                background: p.phone === game.hostPhone ? "var(--gold)" : "var(--felt-soft)"
-                              }}
-                            />
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <Avatar phone={p.phone} name={p.name} size={32} avatar={p.avatar} />
                             <div style={{ fontSize: 14, fontWeight: 500, color: "var(--cream)" }}>
                               {p.name} {p.phone === game.hostPhone && "👑"}
                             </div>
@@ -1320,10 +1319,13 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
                       borderBottom: "1px solid var(--hairline)", paddingBottom: 8
                     }}
                   >
-                    <div>
-                      <span style={{ fontSize: 13, fontWeight: 600 }}>{p.name}</span>
-                      <div className="pn-mono" style={{ fontSize: 11, color: "var(--muted)" }}>
-                        Buy-in: {totalBuy} Banks
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <Avatar phone={p.phone} name={p.name} size={32} avatar={p.avatar} />
+                      <div>
+                        <span style={{ fontSize: 13, fontWeight: 600 }}>{p.name}</span>
+                        <div className="pn-mono" style={{ fontSize: 11, color: "var(--muted)" }}>
+                          Buy-in: {totalBuy} Banks
+                        </div>
                       </div>
                     </div>
 
@@ -1476,10 +1478,13 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
                         borderBottom: "1px solid var(--hairline)", paddingBottom: 8
                       }}
                     >
-                      <div>
-                        <span style={{ fontSize: 14, fontWeight: 500 }}>{p.name}</span>
-                        <div style={{ fontSize: 11, color: "var(--muted)" }}>
-                          Buy-in: {res.buyin} • Cash-out: {res.cashout}
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <Avatar phone={p.phone} name={p.name} size={32} avatar={p.avatar} />
+                        <div>
+                          <span style={{ fontSize: 14, fontWeight: 500 }}>{p.name}</span>
+                          <div style={{ fontSize: 11, color: "var(--muted)" }}>
+                            Buy-in: {res.buyin} • Cash-out: {res.cashout}
+                          </div>
                         </div>
                       </div>
 

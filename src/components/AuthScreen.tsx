@@ -245,6 +245,10 @@ export default function AuthScreen({ onAuth }: AuthScreenProps) {
           <div style={{ textAlign: "center", marginTop: 24, fontSize: 12, color: "var(--muted)" }}>
             🤫 We store your PIN like we store your secrets: on this browser only. Lose your PIN, lose your bragging rights!
           </div>
+
+          <div style={{ textAlign: "center", marginTop: 12, fontSize: 10, fontFamily: "var(--font-mono)", color: "rgba(243, 237, 228, 0.25)", letterSpacing: "0.05em" }}>
+            Build 2.4.12 • Production Stable
+          </div>
         </div>
       </div>
     </div>

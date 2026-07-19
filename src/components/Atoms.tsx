@@ -10,13 +10,29 @@ import { colorForPhone, initials } from "../lib/storage";
    REUSABLE ATOMIC COMPONENTS
 ------------------------------------------------------------------*/
 
+export const AVATAR_EMOJIS = [
+  "🦈", "🦁", "🦊", "🕶️", "👑", "🃏", "💰", "♠️", "♥️", "♦️", "♣️", "🐉", "🦅", "🦉", "🦄", "🪨"
+];
+
+export function defaultAvatarForPhone(phone: string): string {
+  if (!phone) return "🃏";
+  let sum = 0;
+  const clean = phone.replace(/\D/g, "");
+  for (let i = 0; i < clean.length; i++) {
+    sum += clean.charCodeAt(i);
+  }
+  return AVATAR_EMOJIS[sum % AVATAR_EMOJIS.length];
+}
+
 interface AvatarProps {
   phone: string;
   name: string;
   size?: number;
+  avatar?: string;
 }
 
-export function Avatar({ phone, name, size = 36 }: AvatarProps) {
+export function Avatar({ phone, name, size = 36, avatar }: AvatarProps) {
+  const emoji = avatar || defaultAvatarForPhone(phone);
   return (
     <div
       className="pn-avatar"
@@ -24,15 +40,20 @@ export function Avatar({ phone, name, size = 36 }: AvatarProps) {
         background: colorForPhone(phone),
         width: size,
         height: size,
-        fontSize: size * 0.4,
+        fontSize: size * 0.55,
         fontWeight: 600,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        color: "var(--ink)"
+        color: "var(--ink)",
+        borderRadius: "50%",
+        boxShadow: "inset 0 1px 3px rgba(255,255,255,0.2), 0 2px 4px rgba(0,0,0,0.3)",
+        border: "1px solid rgba(255,255,255,0.1)",
+        userSelect: "none"
       }}
+      title={`${name} (${phone})`}
     >
-      {initials(name)}
+      {emoji}
     </div>
   );
 }

@@ -13,7 +13,7 @@ import {
 } from "recharts";
 import { AppState, Game, Session, User } from "../types";
 import { computePlayerLedger, computeHostLedger, fmtDateTime } from "../lib/storage";
-import { Avatar, RsvpBadge, ChipHero, EmptyState, BottomNav } from "./Atoms";
+import { Avatar, RsvpBadge, ChipHero, EmptyState, BottomNav, AVATAR_EMOJIS, defaultAvatarForPhone } from "./Atoms";
 import HoysalaLogo from "./HoysalaLogo";
 
 interface DashboardProps {
@@ -51,6 +51,22 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
     onUpdateState({ ...appState, invites: nextInvites });
   };
 
+  const handleSelectAvatar = (emoji: string) => {
+    if (!onUpdateState) return;
+    const updatedUser = {
+      ...currentUser,
+      avatar: emoji
+    };
+    const nextUsers = {
+      ...appState.users,
+      [currentUser.phone]: updatedUser
+    };
+    onUpdateState({
+      ...appState,
+      users: nextUsers
+    });
+  };
+
   // Load player analytics
   const playerLedger = computePlayerLedger(appState, currentUser.phone);
   const hostLedger = computeHostLedger(appState, currentUser.phone);
@@ -74,7 +90,7 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
       <div className="pn-header flex items-center justify-between px-4 h-20 border-b border-white/5 bg-[var(--ink)]">
         <div className="flex items-center gap-3">
           <div>
-            <Avatar phone={currentUser.phone} name={currentUser.name} size={36} />
+            <Avatar phone={currentUser.phone} name={currentUser.name} size={36} avatar={currentUser.avatar} />
           </div>
           <HoysalaLogo size={38} />
           <div className="pn-header-title">
@@ -332,7 +348,7 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
           <div className="bg-[var(--surface-raised)] border border-[var(--hairline)] rounded-2xl p-5 flex flex-col gap-4 shadow-xl">
             <div className="flex items-center gap-4">
               <div className="p-1 rounded-full border-2 border-[var(--gold)]">
-                <Avatar phone={currentUser.phone} name={currentUser.name} size={48} />
+                <Avatar phone={currentUser.phone} name={currentUser.name} size={48} avatar={currentUser.avatar} />
               </div>
               <div className="flex-1">
                 <h3 className="font-serif text-lg font-semibold text-[var(--cream)]">{currentUser.name}</h3>
@@ -352,6 +368,26 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
                 <LogOut size={14} />
                 Sign Out
               </button>
+            </div>
+
+            {/* Elegant Custom Avatar Picker */}
+            <div className="border-t border-white/5 pt-4 flex flex-col gap-2">
+              <span className="text-[10px] text-[var(--muted)] uppercase tracking-wider font-mono">Select Your Avatar Persona</span>
+              <div className="grid grid-cols-8 gap-2 p-2 bg-black/20 rounded-xl border border-white/5">
+                {AVATAR_EMOJIS.map((emoji) => {
+                  const isSelected = (currentUser.avatar || defaultAvatarForPhone(currentUser.phone)) === emoji;
+                  return (
+                    <button
+                      key={emoji}
+                      type="button"
+                      className={`text-xl p-1 rounded-lg transition-all active:scale-95 ${isSelected ? 'bg-[var(--gold)]/20 border border-[var(--gold)]' : 'hover:bg-white/5 border border-transparent'}`}
+                      onClick={() => handleSelectAvatar(emoji)}
+                    >
+                      {emoji}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
