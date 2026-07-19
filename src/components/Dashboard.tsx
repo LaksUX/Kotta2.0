@@ -23,12 +23,34 @@ interface DashboardProps {
   onSelectGame: (game: Game) => void;
   onOpenCreateGame: () => void;
   onResetData?: () => void;
+  onUpdateState?: (state: AppState) => void;
 }
 
-export default function Dashboard({ currentUser, appState, onLogout, onSelectGame, onOpenCreateGame, onResetData }: DashboardProps) {
+export default function Dashboard({ currentUser, appState, onLogout, onSelectGame, onOpenCreateGame, onResetData, onUpdateState }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<"games" | "profile">("games");
   const [gamesFilter, setGamesFilter] = useState<"live" | "past">("live");
   const [ledgerSubTab, setLedgerSubTab] = useState<"player" | "host">("player");
+
+  // Helper for quick RSVP from Dashboard
+  const handleRsvpFromDashboard = (gameId: string, status: "yes" | "no" | "maybe") => {
+    if (!onUpdateState) return;
+
+    const nextInvites = { ...appState.invites };
+    const existingInvite = Object.values(nextInvites).find(
+      (i) => i.gameId === gameId && i.phone === currentUser.phone
+    );
+
+    const inviteId = existingInvite ? existingInvite.id : `invite_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    nextInvites[inviteId] = {
+      id: inviteId,
+      gameId,
+      phone: currentUser.phone,
+      rsvp: status,
+      updatedAt: Date.now()
+    };
+
+    onUpdateState({ ...appState, invites: nextInvites });
+  };
 
   // Load player analytics
   const playerLedger = computePlayerLedger(appState, currentUser.phone);
@@ -111,23 +133,51 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
                   (i) => i.gameId === game.id && i.phone === currentUser.phone
                 );
                 const isGoing = myInvite?.rsvp === "yes" || isUserHost;
+                const isPending = myInvite?.rsvp === "pending";
+                const isMaybe = myInvite?.rsvp === "maybe";
+                const isNo = myInvite?.rsvp === "no";
+                const hasInvite = !!myInvite;
 
                 // Compute active game metrics
                 const gameBuyins = Object.values(appState.buyins).filter(
                   (b) => b.gameId === game.id && b.status === "approved"
                 );
 
+                // Determine border and accent styling based on RSVP status
+                let borderStyle = "border-white/10 hover:border-white/20";
+                let bgStyle = "bg-[var(--surface)]";
+                if (game.status === "active") {
+                  if (isUserHost) {
+                    borderStyle = "border-[#D4A24C]/30 hover:border-[#D4A24C]/60";
+                    bgStyle = "bg-[#181512]";
+                  } else if (isGoing) {
+                    borderStyle = "border-[#6FA97D]/40 hover:border-[#6FA97D]/70";
+                    bgStyle = "bg-[#101912]";
+                  } else if (isPending || isMaybe) {
+                    borderStyle = "border-[#E8C77E]/60 hover:border-[#E8C77E] animate-pulse";
+                    bgStyle = "bg-[#1d1b15]";
+                  }
+                }
+
                 return (
                   <div
                     key={game.id}
-                    className="pn-card relative overflow-hidden cursor-pointer transition-transform hover:scale-[1.01] border border-white/10 hover:border-white/20 bg-[var(--surface)] rounded-2xl p-6"
+                    className={`pn-card relative overflow-hidden cursor-pointer transition-transform hover:scale-[1.01] border ${borderStyle} ${bgStyle} rounded-2xl p-6`}
                     onClick={() => onSelectGame(game)}
                   >
-                    {isUserHost && (
+                    {isUserHost ? (
                       <div className="absolute top-0 right-0 bg-[var(--gold)] text-[var(--ink)] text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider">
                         HOSTING
                       </div>
-                    )}
+                    ) : isGoing ? (
+                      <div className="absolute top-0 right-0 bg-[#6FA97D] text-[var(--ink)] text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider">
+                        GOING
+                      </div>
+                    ) : (isPending || isMaybe) ? (
+                      <div className="absolute top-0 right-0 bg-[#E8C77E] text-[var(--ink)] text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider animate-pulse">
+                        INVITED
+                      </div>
+                    ) : null}
 
                     <div className="flex justify-between items-start mb-3">
                       <div>
@@ -141,8 +191,14 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
 
                       {game.status === "active" ? (
                         <div>
-                          {isGoing ? (
+                          {isUserHost ? (
+                            <span className="pn-badge bg-[var(--gold)]/20 text-[var(--gold)] border border-[var(--gold)]/30">Host</span>
+                          ) : isGoing ? (
                             <span className="pn-badge pn-badge-yes">Confirmed</span>
+                          ) : isMaybe ? (
+                            <span className="pn-badge bg-amber-500/20 text-amber-300 border border-amber-500/30">Maybe</span>
+                          ) : isNo ? (
+                            <span className="pn-badge bg-red-500/20 text-red-300 border border-red-500/30">Not Going</span>
                           ) : (
                             <span className="pn-badge pn-badge-pending">Pending RSVP</span>
                           )}
@@ -166,6 +222,70 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
                         </span>
                       </div>
                     </div>
+
+                    {/* Direct RSVP Quick Actions on the card itself */}
+                    {game.status === "active" && (isPending || isMaybe || !hasInvite) && !isUserHost && (
+                      <div 
+                        className="mt-4 flex flex-col gap-2 p-3 rounded-xl bg-white/5 border border-white/10"
+                        onClick={(e) => e.stopPropagation()} // Prevent card navigation
+                      >
+                        <span className="text-[11px] text-[#E8C77E] font-mono uppercase tracking-wide">
+                          Respond to Invitation:
+                        </span>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            className="pn-btn pn-btn-sm pn-btn-primary flex-1 py-1 text-[11px] h-8"
+                            onClick={() => handleRsvpFromDashboard(game.id, "yes")}
+                          >
+                            Going 🟢
+                          </button>
+                          <button
+                            type="button"
+                            className="pn-btn pn-btn-sm pn-btn-ghost flex-1 py-1 text-[11px] h-8"
+                            style={{ margin: 0 }}
+                            onClick={() => handleRsvpFromDashboard(game.id, "maybe")}
+                          >
+                            Maybe 🟡
+                          </button>
+                          <button
+                            type="button"
+                            className="pn-btn pn-btn-sm pn-btn-danger flex-1 py-1 text-[11px] h-8"
+                            style={{ margin: 0, border: "1px solid rgba(239, 68, 68, 0.4)", background: "rgba(239, 68, 68, 0.1)" }}
+                            onClick={() => handleRsvpFromDashboard(game.id, "no")}
+                          >
+                            No 🔴
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Confirmed Details Share Link option */}
+                    {game.status === "active" && isGoing && !isUserHost && (
+                      <div 
+                        className="mt-4 flex justify-between items-center p-2.5 rounded-xl bg-white/5 border border-white/10"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-[var(--success)] animate-pulse" />
+                          <span className="text-[11px] text-[#9A93A6]">
+                            You are confirmed!
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          className="text-[11px] text-[var(--gold)] hover:underline font-serif"
+                          onClick={() => {
+                            const url = `${window.location.origin}/?joinGame=${game.id}`;
+                            const msg = `🃏 *POKER NIGHT DETAILS* 🃏\n\n🏆 *${game.title}*\n📅 *Date:* ${game.date}\n⏰ *Time:* ${game.time || "N/A"}\n📍 *Venue:* ${game.venue}\n💰 *Buy-in:* ${game.initialBuyin} Banks\n\n👉 *RSVP here:* ${url}`;
+                            navigator.clipboard.writeText(msg);
+                            alert("📋 Event invitation details copied to clipboard! Share on WhatsApp/SMS.");
+                          }}
+                        >
+                          Share Details 📋
+                        </button>
+                      </div>
+                    )}
 
                     <div className="pn-divider" />
 

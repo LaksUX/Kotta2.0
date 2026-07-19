@@ -518,20 +518,29 @@ function getNewNotifications(prev: AppState, next: AppState, userPhone: string):
     });
   }
 
-  // 2. Check for new invites
+  // 2. Check for new invites or additions
   if (prev.invites && next.invites) {
     Object.values(next.invites).forEach((nextInvite) => {
       if (nextInvite.phone !== userPhone) return;
       const prevInvite = prev.invites[nextInvite.id];
-      if (!prevInvite && nextInvite.rsvp === "pending") {
+      if (!prevInvite) {
         const game = next.games[nextInvite.gameId];
         if (game && game.status !== "closed") {
-          list.push({
-            id: `invite_${nextInvite.id}`,
-            message: `🃏 You're invited to play in "${game.title}" by ${game.hostName}!`,
-            type: "invite",
-            timestamp: Date.now()
-          });
+          if (nextInvite.rsvp === "yes") {
+            list.push({
+              id: `invite_${nextInvite.id}`,
+              message: `🃏 You have been added directly to the active game "${game.title}" by host ${game.hostName}!`,
+              type: "invite",
+              timestamp: Date.now()
+            });
+          } else {
+            list.push({
+              id: `invite_${nextInvite.id}`,
+              message: `🃏 You're invited to play in "${game.title}" by ${game.hostName}!`,
+              type: "invite",
+              timestamp: Date.now()
+            });
+          }
         }
       }
     });
@@ -628,27 +637,39 @@ export default function App() {
     init();
   }, []);
 
-  // Welcome pending invite notifications on login
+  // Welcome invite notifications on login (both pending invites and host direct additions)
   useEffect(() => {
     if (loading || !session) return;
     const currentUser = appState.users[session.phone];
     if (!currentUser) return;
 
-    const pendingInvites = (Object.values(appState.invites) as Invite[]).filter(
-      (i) => i.phone === currentUser.phone && i.rsvp === "pending"
+    const myInvites = (Object.values(appState.invites) as Invite[]).filter(
+      (i) => i.phone === currentUser.phone
     );
 
-    if (pendingInvites.length > 0) {
-      const welcomeNotifs = pendingInvites.map((i) => {
-        const game = appState.games[i.gameId];
+    const welcomeNotifs = myInvites.map((i) => {
+      const game = appState.games[i.gameId];
+      if (!game || game.status !== "active") return null;
+
+      if (i.rsvp === "pending") {
         return {
-          id: `welcome_invite_${i.id}`,
-          message: `🃏 You have a pending invite to "${game?.title || "a poker game"}" by ${game?.hostName || "the host"}.`,
+          id: `welcome_invite_pending_${i.id}`,
+          message: `🃏 You have a pending invite to "${game.title}" by ${game.hostName || "the host"}.`,
           type: "invite" as const,
           timestamp: Date.now()
         };
-      });
+      } else if (i.rsvp === "yes" && game.hostPhone !== currentUser.phone) {
+        return {
+          id: `welcome_invite_yes_${i.id}`,
+          message: `🃏 You are confirmed to play in "${game.title}" (added by host ${game.hostName || "the host"}).`,
+          type: "invite" as const,
+          timestamp: Date.now()
+        };
+      }
+      return null;
+    }).filter(Boolean) as AppNotification[];
 
+    if (welcomeNotifs.length > 0) {
       setNotifications((current) => {
         const prevIds = new Set(current.map((c) => c.id));
         const filtered = welcomeNotifs.filter((n) => !prevIds.has(n.id));
@@ -870,6 +891,7 @@ export default function App() {
                   onSelectGame={setSelectedGame}
                   onOpenCreateGame={() => setIsCreatingGame(true)}
                   onResetData={handleResetData}
+                  onUpdateState={handleUpdateAppState}
                 />
               )}
             </div>
