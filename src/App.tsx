@@ -476,6 +476,49 @@ export default function App() {
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [isCreatingGame, setIsCreatingGame] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [pendingJoinGameId, setPendingJoinGameId] = useState<string | null>(null);
+
+  // Read URL query parameters on load
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const joinId = params.get("joinGame");
+    if (joinId) {
+      setPendingJoinGameId(joinId);
+    }
+  }, []);
+
+  // Redirect to join game if user is logged in
+  useEffect(() => {
+    const currentUser = session ? appState.users[session.phone] : null;
+    if (currentUser && pendingJoinGameId && appState.games[pendingJoinGameId]) {
+      const gameToJoin = appState.games[pendingJoinGameId];
+      const existingInvite = (Object.values(appState.invites) as Invite[]).find(
+        (i) => i.gameId === pendingJoinGameId && i.phone === currentUser.phone
+      );
+      if (!existingInvite) {
+        // Auto RSVP going to make it frictionless
+        const inviteId = "inv_" + Date.now();
+        const nextInvites = {
+          ...appState.invites,
+          [inviteId]: {
+            id: inviteId,
+            gameId: pendingJoinGameId,
+            phone: currentUser.phone,
+            rsvp: "yes",
+            updatedAt: Date.now()
+          }
+        };
+        handleUpdateAppState({ ...appState, invites: nextInvites });
+      }
+      setSelectedGame(gameToJoin);
+      setPendingJoinGameId(null);
+
+      // Clean up search query param cleanly
+      const url = new URL(window.location.href);
+      url.searchParams.delete("joinGame");
+      window.history.replaceState({}, document.title, url.pathname);
+    }
+  }, [session, pendingJoinGameId, appState.games]);
 
   // Initialize and load persistent data
   useEffect(() => {
