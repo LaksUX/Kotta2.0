@@ -24,9 +24,8 @@ export default function CreateGame({ hostPhone, hostName, onClose, onSave }: Cre
   });
   const [time, setTime] = useState("19:30");
   const [venue, setVenue] = useState("Rohan's Living Room");
-  const [initialBuyin, setInitialBuyin] = useState(100);
+  const [initialBuyin, setInitialBuyin] = useState(1);
   const [rake, setRake] = useState(5);
-  const [maxPlayers, setMaxPlayers] = useState(12);
   const [ratio, setRatio] = useState<"1:1" | "1:2" | undefined>("1:2");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -53,7 +52,6 @@ export default function CreateGame({ hostPhone, hostName, onClose, onSave }: Cre
       hostName,
       initialBuyin,
       rake,
-      maxPlayers: maxPlayers || undefined,
       ratio,
       status: "active", // created as active directly, ready for play
       createdAt: Date.now()
@@ -67,7 +65,7 @@ export default function CreateGame({ hostPhone, hostName, onClose, onSave }: Cre
 
   return (
     <div style={{
-      position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+      position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
       background: "var(--ink)", zIndex: 100, display: "flex", flexDirection: "column"
     }}>
       <div className="pn-header">
@@ -156,12 +154,15 @@ export default function CreateGame({ hostPhone, hostName, onClose, onSave }: Cre
                   onChange={(e) => setRake(Number(e.target.value))}
                   required
                 />
+                <span style={{ fontSize: 10, color: "var(--muted)", marginTop: 2, display: "block" }}>
+                  visible only to you
+                </span>
               </div>
             </div>
 
             <div style={{ marginBottom: 12 }}>
               <label className="pn-label" style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                Game Blinds Ratio
+                Game Format
               </label>
               <div style={{ display: "flex", gap: 8 }}>
                 <button
@@ -170,7 +171,7 @@ export default function CreateGame({ hostPhone, hostName, onClose, onSave }: Cre
                   onClick={() => setRatio("1:1")}
                   style={{ flex: 1, justifyContent: "center", padding: "10px", margin: 0 }}
                 >
-                  1:1 Ratio (e.g. SB 5 / BB 5)
+                  1:1
                 </button>
                 <button
                   type="button"
@@ -178,22 +179,12 @@ export default function CreateGame({ hostPhone, hostName, onClose, onSave }: Cre
                   onClick={() => setRatio("1:2")}
                   style={{ flex: 1, justifyContent: "center", padding: "10px", margin: 0 }}
                 >
-                  1:2 Ratio (e.g. SB 5 / BB 10)
+                  1:2
                 </button>
               </div>
             </div>
 
             <div>
-              <label className="pn-label">Max Players (Optional)</label>
-              <input
-                className="pn-input pn-mono"
-                type="number"
-                min={2}
-                max={100}
-                value={maxPlayers || ""}
-                onChange={(e) => setMaxPlayers(e.target.value ? Number(e.target.value) : 0)}
-                placeholder="e.g. 12"
-              />
               <span style={{ fontSize: 11, color: "var(--muted)", marginTop: 4, display: "block" }}>
                 Rake is deducted from the total buy-in pool at checkout.
               </span>
@@ -228,7 +219,7 @@ export default function CreateGame({ hostPhone, hostName, onClose, onSave }: Cre
                   Scheduling...
                 </>
               ) : (
-                "Launch Game"
+                "Start Game"
               )}
             </button>
           </div>

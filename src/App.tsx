@@ -538,6 +538,44 @@ export default function App() {
     init();
   }, []);
 
+  // Intelligent Polling Sync for Multi-Device and Smart Player Searching
+  useEffect(() => {
+    if (loading) return;
+    
+    let active = true;
+    const poll = async () => {
+      if (document.visibilityState !== "visible") return;
+      try {
+        const nextState = await loadAppState();
+        if (active) {
+          setAppState((prev) => {
+            // Compare stringified JSON to check if changes occurred on other devices
+            if (JSON.stringify(prev) !== JSON.stringify(nextState)) {
+              // If selectedGame is currently active, sync its values
+              if (selectedGame) {
+                const refreshedGame = nextState.games[selectedGame.id];
+                if (refreshedGame) {
+                  setSelectedGame(refreshedGame);
+                }
+              }
+              return nextState;
+            }
+            return prev;
+          });
+        }
+      } catch (e) {
+        console.warn("Sync polling failed", e);
+      }
+    };
+
+    // Run poll every 3 seconds to keep other devices/logins perfectly in sync
+    const timer = setInterval(poll, 3000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [loading, selectedGame]);
+
   // Update State Trigger and Synchronize selected game if visible
   const handleUpdateAppState = async (nextState: AppState) => {
     setAppState(nextState);

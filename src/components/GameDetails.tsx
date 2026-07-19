@@ -340,7 +340,7 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
   }
 
   return (
-    <div className="pn-root">
+    <div className="flex flex-col h-full w-full bg-[var(--ink)] text-[var(--cream)] relative overflow-hidden">
       <div className="pn-header">
         <button className="pn-icon-btn" onClick={onBack}>
           <ChevronLeft size={20} />
@@ -841,68 +841,6 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
         {/* --- TAB 2: LIVE GAME & SETTLE (Only when game is active & Live tab is selected) --- */}
         {game.status === "active" && gameTab === "live" && !isClosing && (
           <>
-            {/* Host Administration: Pending Buyins to Approve */}
-            {isHost && (
-              <div className="pn-card" style={{ marginBottom: 16, border: "1px solid rgba(212,162,76,0.3)" }}>
-                <span className="pn-label" style={{ color: "var(--gold)", fontWeight: 600 }}>Host: Action Requests</span>
-                
-                {gameBuyins.filter((b) => b.status === "pending").length > 0 ? (
-                  <div style={{ marginTop: 6 }}>
-                    <span className="pn-label" style={{ fontSize: 11, color: "var(--gold-soft)" }}>Pending Buy-ins</span>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      {gameBuyins.filter((b) => b.status === "pending").map((b) => {
-                        const user = appState.users[b.phone];
-                        return (
-                          <div
-                            key={b.id}
-                            style={{
-                              display: "flex", alignItems: "center", justify: "space-between",
-                              background: "var(--surface-raised)", padding: "8px 10px", borderRadius: 8
-                            }}
-                          >
-                            <div>
-                              <div style={{ fontSize: 13, fontWeight: 500 }}>{user?.name || b.phone}</div>
-                              <div className="pn-mono" style={{ fontSize: 11, color: "var(--muted)" }}>{b.amount} Banks</div>
-                            </div>
-                            <div style={{ display: "flex", gap: 6 }}>
-                              <button
-                                className="pn-icon-btn"
-                                onClick={() => handleBuyinAction(b.id, "approved")}
-                                style={{ background: "rgba(111,169,125,0.2)", color: "var(--success)" }}
-                              >
-                                <Check size={16} />
-                              </button>
-                              <button
-                                className="pn-icon-btn"
-                                onClick={() => handleBuyinAction(b.id, "rejected")}
-                                style={{ background: "rgba(193,84,75,0.2)", color: "var(--danger)" }}
-                              >
-                                <X size={16} />
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ fontSize: 12, color: "var(--muted)", padding: "4px 0" }}>
-                    ✅ No pending buy-in requests to approve
-                  </div>
-                )}
-
-                <div className="pn-divider" />
-
-                <button
-                  className="pn-btn pn-btn-primary w-full"
-                  onClick={() => setIsClosing(true)}
-                  style={{ gap: 6, display: "flex", alignItems: "center", justifyContent: "center" }}
-                >
-                  <Play size={16} /> End Game &amp; Settle Up
-                </button>
-              </div>
-            )}
-
             {/* Buy-in panel for the user */}
             {myRsvp === "yes" && (
               <div className="pn-card" style={{ marginBottom: 16 }}>
@@ -995,7 +933,7 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
             )}
 
             {/* Players and Buyins List */}
-            <div className="pn-card">
+            <div className="pn-card" style={{ marginBottom: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <span className="pn-label" style={{ margin: 0 }}>Felt Ledger ({players.length} players)</span>
                 <span className="pn-mono" style={{ fontSize: 13, color: "var(--muted)" }}>
@@ -1020,7 +958,7 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
                           borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: 10
                         }}
                       >
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <div style={{ display: "flex", alignItems: "center", justify: "space-between" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                             <div
                               style={{
@@ -1106,6 +1044,68 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
                 </div>
               )}
             </div>
+
+            {/* Host Administration: Pending Buyins to Approve (Moved to Bottom) */}
+            {isHost && (
+              <div className="pn-card" style={{ marginBottom: 16, border: "1px solid rgba(212,162,76,0.3)" }}>
+                <span className="pn-label" style={{ color: "var(--gold)", fontWeight: 600 }}>Host: Action Requests</span>
+                
+                {gameBuyins.filter((b) => b.status === "pending").length > 0 ? (
+                  <div style={{ marginTop: 6 }}>
+                    <span className="pn-label" style={{ fontSize: 11, color: "var(--gold-soft)" }}>Pending Buy-ins</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {gameBuyins.filter((b) => b.status === "pending").map((b) => {
+                        const user = appState.users[b.phone];
+                        return (
+                          <div
+                            key={b.id}
+                            style={{
+                              display: "flex", alignItems: "center", justifyContent: "space-between",
+                              background: "var(--surface-raised)", padding: "8px 10px", borderRadius: 8
+                            }}
+                          >
+                            <div>
+                              <div style={{ fontSize: 13, fontWeight: 500 }}>{user?.name || b.phone}</div>
+                              <div className="pn-mono" style={{ fontSize: 11, color: "var(--muted)" }}>{b.amount} Banks</div>
+                            </div>
+                            <div style={{ display: "flex", gap: 6 }}>
+                              <button
+                                className="pn-icon-btn"
+                                onClick={() => handleBuyinAction(b.id, "approved")}
+                                style={{ background: "rgba(111,169,125,0.2)", color: "var(--success)" }}
+                              >
+                                <Check size={16} />
+                              </button>
+                              <button
+                                className="pn-icon-btn"
+                                onClick={() => handleBuyinAction(b.id, "rejected")}
+                                style={{ background: "rgba(193,84,75,0.2)", color: "var(--danger)" }}
+                              >
+                                <X size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 12, color: "var(--muted)", padding: "4px 0" }}>
+                    ✅ No pending buy-in requests to approve
+                  </div>
+                )}
+
+                <div className="pn-divider" />
+
+                <button
+                  className="pn-btn pn-btn-primary w-full"
+                  onClick={() => setIsClosing(true)}
+                  style={{ gap: 6, display: "flex", alignItems: "center", justifyContent: "center" }}
+                >
+                  <Play size={16} /> End Game &amp; Settle Up
+                </button>
+              </div>
+            )}
           </>
         )}
 

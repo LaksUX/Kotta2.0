@@ -48,7 +48,7 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
   const displayedGames = gamesFilter === "live" ? liveGames : pastGames;
 
   return (
-    <div className="pn-root">
+    <div className="flex flex-col h-full w-full bg-[var(--ink)] text-[var(--cream)] relative overflow-hidden">
       {/* App Header styled like the High Density Felt Board */}
       <div className="pn-header flex items-center justify-between px-4 lg:px-8 h-20 border-b border-white/5 bg-[var(--ink)]">
         <div className="flex items-center gap-3">
@@ -57,7 +57,7 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
           </div>
           <HoysalaLogo size={38} />
           <div className="pn-header-title">
-            <h1 className="text-xl lg:text-2xl font-serif font-semibold tracking-tight">The Felt Board</h1>
+            <h1 className="text-xl lg:text-2xl font-serif font-semibold tracking-tight">Kotta</h1>
             <div className="lg:hidden text-xs text-muted">Welcome back, {currentUser.name}</div>
           </div>
         </div>
@@ -102,13 +102,13 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
                 className={`pn-tag-pill ${gamesFilter === "live" ? "active" : ""}`}
                 onClick={() => setGamesFilter("live")}
               >
-                Live Nights ({liveGames.length})
+                Live Game ({liveGames.length})
               </button>
               <button
                 className={`pn-tag-pill ${gamesFilter === "past" ? "active" : ""}`}
                 onClick={() => setGamesFilter("past")}
               >
-                Closed Ledger ({pastGames.length})
+                Past Games ({pastGames.length})
               </button>
             </div>
           </div>
@@ -255,17 +255,6 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
                 <LogOut size={14} />
                 Sign Out
               </button>
-              {onResetData && (
-                <button
-                  type="button"
-                  className="pn-btn pn-btn-sm flex-1 text-xs text-[var(--danger)] border border-[var(--danger)] hover:bg-[var(--danger)]/10"
-                  style={{ background: "transparent" }}
-                  onClick={onResetData}
-                  title="Wipe local database"
-                >
-                  Clear All Data
-                </button>
-              )}
             </div>
           </div>
 
@@ -333,37 +322,59 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
               </div>
 
               {/* Chart */}
-              {playerLedger.chartData.length > 1 && (
-                <div className="bg-[var(--surface-raised)] rounded-2xl p-5 border border-white/10">
-                  <span className="text-xs text-[#9A93A6] uppercase tracking-wider mb-4 block">Bankroll Trend Trajectory</span>
-                  <div className="h-32">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={playerLedger.chartData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(243,237,228,0.04)" />
-                        <XAxis dataKey="session" stroke="var(--muted)" fontSize={10} tickLine={false} />
-                        <YAxis stroke="var(--muted)" fontSize={10} tickLine={false} />
-                        <Tooltip
-                          contentStyle={{
-                            background: "var(--surface-raised)",
-                            border: "1px solid var(--hairline)",
-                            borderRadius: 8,
-                            fontSize: 12
-                          }}
-                          labelStyle={{ display: "none" }}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="cumulative"
-                          stroke="var(--gold)"
-                          strokeWidth={2.5}
-                          dot={{ fill: "var(--gold-soft)", strokeWidth: 1 }}
-                          activeDot={{ r: 6 }}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
+              <div className="bg-[var(--surface-raised)] rounded-2xl p-5 border border-white/10">
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-xs text-[#9A93A6] uppercase tracking-wider block">Bankroll Trend Trajectory</span>
+                  {playerLedger.chartData.length <= 1 && (
+                    <span className="text-[10px] bg-[var(--gold)]/10 text-[var(--gold)] px-2 py-0.5 rounded font-mono uppercase tracking-widest">
+                      Sample Preview
+                    </span>
+                  )}
                 </div>
-              )}
+                <div className="h-36">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={
+                        playerLedger.chartData.length > 1
+                          ? playerLedger.chartData
+                          : [
+                              { session: 1, cumulative: 0, label: "Initial Sitting" },
+                              { session: 2, cumulative: 15, label: "Friday Shakedown" },
+                              { session: 3, cumulative: -10, label: "Classic Night" },
+                              { session: 4, cumulative: 25, label: "Main Scoop" },
+                              { session: 5, cumulative: 40, label: "Sunday Board" }
+                            ]
+                      }
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(243,237,228,0.04)" />
+                      <XAxis dataKey="session" stroke="var(--muted)" fontSize={10} tickLine={false} />
+                      <YAxis stroke="var(--muted)" fontSize={10} tickLine={false} />
+                      <Tooltip
+                        contentStyle={{
+                          background: "var(--surface-raised)",
+                          border: "1px solid var(--hairline)",
+                          borderRadius: 8,
+                          fontSize: 12
+                        }}
+                        labelStyle={{ display: "none" }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="cumulative"
+                        stroke="var(--gold)"
+                        strokeWidth={2.5}
+                        dot={{ fill: "var(--gold-soft)", strokeWidth: 1 }}
+                        activeDot={{ r: 6 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+                {playerLedger.chartData.length <= 1 && (
+                  <span className="text-[10px] text-[var(--muted)] block text-center mt-2 font-serif italic">
+                    Start playing or hosting games to populate your live interactive bankroll trajectory.
+                  </span>
+                )}
+              </div>
 
               {/* Sessions Log */}
               <div className="bg-[var(--surface)] rounded-2xl p-6 border border-white/10">
