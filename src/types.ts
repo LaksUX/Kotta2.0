@@ -24,6 +24,7 @@ export interface Game {
   initialBuyin: number; // in Banks
   rake: number;         // in Banks
   maxPlayers?: number;
+  ratio?: "1:1" | "1:2";
   status: GameStatus;
   createdAt: number;
   closedAt?: number;

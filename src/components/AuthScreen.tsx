@@ -85,12 +85,28 @@ export default function AuthScreen({ onAuth }: AuthScreenProps) {
       <div className="pn-body" style={{ paddingTop: 60 }}>
         <div className="w-full max-w-[400px] mx-auto">
           <div style={{ textAlign: "center", marginBottom: 28 }}>
-            <div className="pn-chip-hero" style={{ marginBottom: 14 }}>
-              <div className="pn-chip-hero-inner">
-                <ShieldCheck size={30} color="var(--gold-soft)" />
-              </div>
+            {/* Premium Gold Emblem Logo */}
+            <div 
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: "50%",
+                background: "linear-gradient(135deg, var(--gold) 0%, var(--gold-soft) 100%)",
+                margin: "0 auto 16px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 8px 24px rgba(212, 175, 55, 0.25)",
+                border: "4px solid rgba(255, 255, 255, 0.1)"
+              }}
+            >
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L4 5V11C4 16.55 7.42 21.74 12 23C16.58 21.74 20 16.55 20 11V5L12 2Z" fill="var(--ink)" />
+                <path d="M8 9L10 11L12 7L14 11L16 9" stroke="var(--gold-soft)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="12" cy="14" r="2.5" fill="var(--gold-soft)" />
+              </svg>
             </div>
-            <div className="pn-display" style={{ fontSize: 26, fontWeight: 600 }}>Kotta</div>
+            <div className="pn-display" style={{ fontSize: 28, fontWeight: 700, letterSpacing: "-0.03em", color: "var(--cream)" }}>Kotta</div>
             <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 4 }}>
               Track buy-ins &amp; settle up. No currency, no cash — just Banks.
             </div>

@@ -26,7 +26,8 @@ export default function CreateGame({ hostPhone, hostName, onClose, onSave }: Cre
   const [venue, setVenue] = useState("Rohan's Living Room");
   const [initialBuyin, setInitialBuyin] = useState(100);
   const [rake, setRake] = useState(5);
-  const [maxPlayers, setMaxPlayers] = useState(9);
+  const [maxPlayers, setMaxPlayers] = useState(12);
+  const [ratio, setRatio] = useState<"1:1" | "1:2" | undefined>("1:2");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -53,6 +54,7 @@ export default function CreateGame({ hostPhone, hostName, onClose, onSave }: Cre
       initialBuyin,
       rake,
       maxPlayers: maxPlayers || undefined,
+      ratio,
       status: "active", // created as active directly, ready for play
       createdAt: Date.now()
     };
@@ -134,7 +136,7 @@ export default function CreateGame({ hostPhone, hostName, onClose, onSave }: Cre
                 <input
                   className="pn-input pn-mono"
                   type="number"
-                  min={10}
+                  min={1}
                   value={initialBuyin}
                   onChange={(e) => setInitialBuyin(Number(e.target.value))}
                   required
@@ -157,16 +159,40 @@ export default function CreateGame({ hostPhone, hostName, onClose, onSave }: Cre
               </div>
             </div>
 
+            <div style={{ marginBottom: 12 }}>
+              <label className="pn-label" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                Game Blinds Ratio
+              </label>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  type="button"
+                  className={`pn-tag-pill ${ratio === "1:1" ? "active" : ""}`}
+                  onClick={() => setRatio("1:1")}
+                  style={{ flex: 1, justifyContent: "center", padding: "10px", margin: 0 }}
+                >
+                  1:1 Ratio (e.g. SB 5 / BB 5)
+                </button>
+                <button
+                  type="button"
+                  className={`pn-tag-pill ${ratio === "1:2" ? "active" : ""}`}
+                  onClick={() => setRatio("1:2")}
+                  style={{ flex: 1, justifyContent: "center", padding: "10px", margin: 0 }}
+                >
+                  1:2 Ratio (e.g. SB 5 / BB 10)
+                </button>
+              </div>
+            </div>
+
             <div>
               <label className="pn-label">Max Players (Optional)</label>
               <input
                 className="pn-input pn-mono"
                 type="number"
                 min={2}
-                max={20}
-                value={maxPlayers}
-                onChange={(e) => setMaxPlayers(Number(e.target.value))}
-                placeholder="e.g. 9"
+                max={100}
+                value={maxPlayers || ""}
+                onChange={(e) => setMaxPlayers(e.target.value ? Number(e.target.value) : 0)}
+                placeholder="e.g. 12"
               />
               <span style={{ fontSize: 11, color: "var(--muted)", marginTop: 4, display: "block" }}>
                 Rake is deducted from the total buy-in pool at checkout.

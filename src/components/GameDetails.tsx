@@ -26,6 +26,10 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
   const isHost = game.hostPhone === currentUser.phone;
   const players = getConfirmedPlayers(appState, game);
 
+  // Custom and manual buyin states
+  const [customBuyinAmount, setCustomBuyinAmount] = useState<number>(game.initialBuyin);
+  const [manualBuyinAmount, setManualBuyinAmount] = useState<number>(game.initialBuyin);
+
   // RSVPs for this game
   const myInvite = Object.values(appState.invites).find(
     (i) => i.gameId === game.id && i.phone === currentUser.phone
@@ -38,6 +42,39 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
   const myPendingBuyins = gameBuyins.filter((b) => b.phone === currentUser.phone && b.status === "pending");
 
   const totalMyApprovedBuyin = myApprovedBuyins.reduce((s, b) => s + b.amount, 0);
+
+  // Direct buyin action (host only, approved automatically)
+  function handleDirectBuyin(phone: string, amount: number) {
+    if (amount < 1) return;
+    const buyinId = genId("buyin");
+    const nextBuyins = { ...appState.buyins };
+    nextBuyins[buyinId] = {
+      id: buyinId,
+      gameId: game.id,
+      phone,
+      amount,
+      status: "approved",
+      createdAt: Date.now()
+    };
+
+    // Make sure player is added to RSVPs (Going)
+    const nextInvites = { ...appState.invites };
+    const existingInvite = Object.values(nextInvites).find(
+      (i) => i.gameId === game.id && i.phone === phone
+    );
+    if (!existingInvite || existingInvite.rsvp !== "yes") {
+      const inviteId = existingInvite ? existingInvite.id : genId("invite");
+      nextInvites[inviteId] = {
+        id: inviteId,
+        gameId: game.id,
+        phone,
+        rsvp: "yes",
+        updatedAt: Date.now()
+      };
+    }
+
+    onUpdateState({ ...appState, buyins: nextBuyins, invites: nextInvites });
+  }
 
   // Close Game / Cash Out Flow state
   const [isClosing, setIsClosing] = useState(false);
@@ -151,13 +188,14 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
       id: buyinId,
       gameId: game.id,
       phone: cleanPhone,
-      amount: game.initialBuyin,
+      amount: manualBuyinAmount,
       status: "approved",
       createdAt: Date.now()
     };
 
     onUpdateState({ ...appState, invites: nextInvites, buyins: nextBuyins });
     setSearchPhone("");
+    setManualBuyinAmount(game.initialBuyin);
   }
 
   // Live Settle-up Financials
@@ -217,9 +255,16 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
         <div className="pn-card" style={{ marginBottom: 16 }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
             <span style={{ fontSize: 13, color: "var(--gold)", fontWeight: 500 }}>Host: {game.hostName}</span>
-            <span className="pn-mono" style={{ fontSize: 13, color: "var(--muted)" }}>
-              Buy-in: {game.initialBuyin} Banks
-            </span>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+              <span className="pn-mono" style={{ fontSize: 13, color: "var(--cream)" }}>
+                Buy-in: {game.initialBuyin} Banks
+              </span>
+              {game.ratio && (
+                <span className="pn-mono" style={{ fontSize: 11, color: "var(--gold-soft)" }}>
+                  Stakes: {game.ratio} Blinds
+                </span>
+              )}
+            </div>
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -277,22 +322,70 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
                   </span>
                 </div>
 
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button
-                    className="pn-btn pn-btn-felt"
-                    onClick={() => handleRequestBuyin(game.initialBuyin)}
-                    style={{ flex: 1 }}
-                  >
-                    <Plus size={16} /> Buy-in {game.initialBuyin} Banks
-                  </button>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <div style={{ flex: 1 }}>
+                      <span className="text-[10px] text-[#9A93A6] uppercase tracking-wider block mb-1">Buy-in Amount</span>
+                      <input
+                        className="pn-input pn-mono"
+                        type="number"
+                        min={1}
+                        value={customBuyinAmount}
+                        onChange={(e) => setCustomBuyinAmount(Math.max(1, Number(e.target.value)))}
+                        style={{ padding: "8px 12px", fontSize: 14 }}
+                      />
+                    </div>
+                    <button
+                      className="pn-btn pn-btn-felt"
+                      onClick={() => handleRequestBuyin(customBuyinAmount)}
+                      style={{ height: 38, marginTop: 17, flex: 1.2, gap: 4, display: "flex", alignItems: "center", justifyContent: "center" }}
+                    >
+                      <Plus size={16} /> Buy-in {customBuyinAmount} Banks
+                    </button>
+                  </div>
 
-                  <button
-                    className="pn-btn pn-btn-ghost"
-                    onClick={() => handleRequestBuyin(Math.floor(game.initialBuyin / 2))}
-                    style={{ flex: 1 }}
-                  >
-                    Half Buy-in
-                  </button>
+                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      className="pn-tag-pill"
+                      style={{ fontSize: 11, padding: "4px 10px", margin: 0 }}
+                      onClick={() => setCustomBuyinAmount(game.initialBuyin)}
+                    >
+                      Initial ({game.initialBuyin})
+                    </button>
+                    <button
+                      type="button"
+                      className="pn-tag-pill"
+                      style={{ fontSize: 11, padding: "4px 10px", margin: 0 }}
+                      onClick={() => setCustomBuyinAmount(Math.floor(game.initialBuyin / 2) || 1)}
+                    >
+                      Half ({Math.floor(game.initialBuyin / 2) || 1})
+                    </button>
+                    <button
+                      type="button"
+                      className="pn-tag-pill"
+                      style={{ fontSize: 11, padding: "4px 10px", margin: 0 }}
+                      onClick={() => setCustomBuyinAmount(2 * game.initialBuyin)}
+                    >
+                      Double ({2 * game.initialBuyin})
+                    </button>
+                    <button
+                      type="button"
+                      className="pn-tag-pill"
+                      style={{ fontSize: 11, padding: "4px 10px", margin: 0 }}
+                      onClick={() => setCustomBuyinAmount(prev => prev + 25)}
+                    >
+                      +25
+                    </button>
+                    <button
+                      type="button"
+                      className="pn-tag-pill"
+                      style={{ fontSize: 11, padding: "4px 10px", margin: 0 }}
+                      onClick={() => setCustomBuyinAmount(prev => prev + 100)}
+                    >
+                      +100
+                    </button>
+                  </div>
                 </div>
 
                 {myPendingBuyins.length > 0 && (
@@ -318,20 +411,34 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
                 {/* Manual Add Player */}
                 <div style={{ marginBottom: 12 }}>
                   <span style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 4 }}>
-                    Add sitting player directly (by Phone)
+                    Add sitting player directly
                   </span>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <input
-                      className="pn-input pn-mono"
-                      value={searchPhone}
-                      onChange={(e) => setSearchPhone(e.target.value)}
-                      placeholder="e.g. 9876543210"
-                      style={{ padding: "8px 12px", fontSize: 13 }}
-                    />
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    <div style={{ flex: 1.5, minWidth: 120 }}>
+                      <input
+                        className="pn-input pn-mono"
+                        value={searchPhone}
+                        onChange={(e) => setSearchPhone(e.target.value)}
+                        placeholder="Phone: 9876543210"
+                        style={{ padding: "8px 12px", fontSize: 13, width: "100%" }}
+                      />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 80 }}>
+                      <input
+                        className="pn-input pn-mono"
+                        type="number"
+                        min={1}
+                        value={manualBuyinAmount}
+                        onChange={(e) => setManualBuyinAmount(Math.max(1, Number(e.target.value)))}
+                        placeholder="Amt"
+                        style={{ padding: "8px 12px", fontSize: 13, width: "100%" }}
+                      />
+                    </div>
                     <button
                       className="pn-btn pn-btn-primary pn-btn-sm"
                       onClick={handleManualAdd}
                       type="button"
+                      style={{ padding: "0 14px", height: 38 }}
                     >
                       Add &amp; Buyin
                     </button>
@@ -341,6 +448,91 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
                       {manualAddError}
                     </span>
                   )}
+                </div>
+
+                {/* Manage Player RSVPs */}
+                <div style={{ marginBottom: 16 }}>
+                  <span className="pn-label" style={{ marginBottom: 4, fontSize: 12, color: "var(--gold-soft)" }}>Manage Player RSVPs</span>
+                  <span style={{ fontSize: 11, color: "var(--muted)", display: "block", marginBottom: 6 }}>
+                    Adjust attendance of any registered player:
+                  </span>
+                  <div style={{ maxHeight: 120, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6, background: "rgba(0,0,0,0.15)", padding: 6, borderRadius: 8, border: "1px solid rgba(255,255,255,0.05)" }}>
+                    {Object.values(appState.users).map((user) => {
+                      if (user.phone === game.hostPhone) return null; // skip host
+                      const invite = Object.values(appState.invites).find(
+                        (i) => i.gameId === game.id && i.phone === user.phone
+                      );
+                      const currentRsvp = invite ? invite.rsvp : "pending";
+
+                      return (
+                        <div key={user.phone} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 11, borderBottom: "1px solid rgba(255,255,255,0.03)", paddingBottom: 4 }}>
+                          <span style={{ fontWeight: 500, color: "var(--cream)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "120px" }}>
+                            {user.name}
+                          </span>
+
+                          <div style={{ display: "flex", gap: 3 }}>
+                            <button
+                              type="button"
+                              className={`pn-tag-pill ${currentRsvp === "yes" ? "active" : ""}`}
+                              style={{ fontSize: 9, padding: "1px 4px", margin: 0 }}
+                              onClick={() => {
+                                const nextInvites = { ...appState.invites };
+                                const inviteId = invite ? invite.id : genId("invite");
+                                nextInvites[inviteId] = {
+                                  id: inviteId,
+                                  gameId: game.id,
+                                  phone: user.phone,
+                                  rsvp: "yes",
+                                  updatedAt: Date.now()
+                                };
+                                onUpdateState({ ...appState, invites: nextInvites });
+                              }}
+                            >
+                              Go
+                            </button>
+                            <button
+                              type="button"
+                              className={`pn-tag-pill ${currentRsvp === "maybe" ? "active" : ""}`}
+                              style={{ fontSize: 9, padding: "1px 4px", margin: 0 }}
+                              onClick={() => {
+                                const nextInvites = { ...appState.invites };
+                                const inviteId = invite ? invite.id : genId("invite");
+                                nextInvites[inviteId] = {
+                                  id: inviteId,
+                                  gameId: game.id,
+                                  phone: user.phone,
+                                  rsvp: "maybe",
+                                  updatedAt: Date.now()
+                                };
+                                onUpdateState({ ...appState, invites: nextInvites });
+                              }}
+                            >
+                              ?
+                            </button>
+                            <button
+                              type="button"
+                              className={`pn-tag-pill ${currentRsvp === "no" ? "active" : ""}`}
+                              style={{ fontSize: 9, padding: "1px 4px", margin: 0 }}
+                              onClick={() => {
+                                const nextInvites = { ...appState.invites };
+                                const inviteId = invite ? invite.id : genId("invite");
+                                nextInvites[inviteId] = {
+                                  id: inviteId,
+                                  gameId: game.id,
+                                  phone: user.phone,
+                                  rsvp: "no",
+                                  updatedAt: Date.now()
+                                };
+                                onUpdateState({ ...appState, invites: nextInvites });
+                              }}
+                            >
+                              No
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* Pending Buyins to Approve */}
@@ -415,7 +607,7 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
                   No confirmed players yet. Request buy-in above!
                 </div>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   {players.map((p) => {
                     const playerBuyins = gameBuyins.filter((b) => b.phone === p.phone && b.status === "approved");
                     const totalBuy = playerBuyins.reduce((s, b) => s + b.amount, 0);
@@ -423,28 +615,90 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
                       <div
                         key={p.phone}
                         style={{
-                          display: "flex", alignItems: "center", justifyValue: "space-between",
-                          justifyContent: "space-between"
+                          display: "flex", flexDirection: "column", gap: 6,
+                          borderBottom: "1px solid rgba(255,255,255,0.05)", paddingBottom: 10
                         }}
                       >
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <div
-                            style={{
-                              width: 8, height: 8, borderRadius: "50%",
-                              background: p.phone === game.hostPhone ? "var(--gold)" : "var(--felt-soft)"
-                            }}
-                          />
-                          <div>
-                            <div style={{ fontSize: 14, fontWeight: 500 }}>
-                              {p.name} {p.phone === game.hostPhone && "👑"}
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <div
+                              style={{
+                                width: 8, height: 8, borderRadius: "50%",
+                                background: p.phone === game.hostPhone ? "var(--gold)" : "var(--felt-soft)"
+                              }}
+                            />
+                            <div>
+                              <div style={{ fontSize: 14, fontWeight: 500, color: "var(--cream)" }}>
+                                {p.name} {p.phone === game.hostPhone && "👑"}
+                              </div>
+                              <div style={{ fontSize: 11, color: "var(--muted)" }}>{p.phone}</div>
                             </div>
-                            <div style={{ fontSize: 11, color: "var(--muted)" }}>{p.phone}</div>
+                          </div>
+
+                          <div className="pn-mono text-sm font-semibold text-[#E8C77E]">
+                            {totalBuy} Banks
                           </div>
                         </div>
 
-                        <div className="pn-mono" style={{ fontSize: 14, fontWeight: 500 }}>
-                          {totalBuy} Banks
-                        </div>
+                        {/* Direct buyin action for host */}
+                        {isHost && (
+                          <div style={{ display: "flex", gap: 6, alignItems: "center", justifyContent: "flex-end", marginTop: 4, flexWrap: "wrap" }}>
+                            <span style={{ fontSize: 10, color: "var(--muted)", marginRight: "auto" }}>Direct Buy-in:</span>
+                            <button
+                              type="button"
+                              className="pn-tag-pill"
+                              style={{ padding: "2px 8px", fontSize: 11, margin: 0, background: "rgba(255,255,255,0.03)" }}
+                              onClick={() => handleDirectBuyin(p.phone, game.initialBuyin)}
+                            >
+                              +{game.initialBuyin}
+                            </button>
+                            <button
+                              type="button"
+                              className="pn-tag-pill"
+                              style={{ padding: "2px 8px", fontSize: 11, margin: 0, background: "rgba(255,255,255,0.03)" }}
+                              onClick={() => handleDirectBuyin(p.phone, Math.floor(game.initialBuyin / 2) || 1)}
+                            >
+                              +{Math.floor(game.initialBuyin / 2) || 1}
+                            </button>
+                            
+                            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                              <input
+                                type="number"
+                                min={1}
+                                placeholder="Custom"
+                                className="pn-input pn-mono"
+                                style={{ width: 70, padding: "2px 6px", fontSize: 11, height: 24, margin: 0 }}
+                                id={`direct-buyin-${p.phone}`}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    const input = document.getElementById(`direct-buyin-${p.phone}`) as HTMLInputElement;
+                                    const val = Number(input?.value);
+                                    if (val >= 1) {
+                                      handleDirectBuyin(p.phone, val);
+                                      if (input) input.value = "";
+                                    }
+                                  }
+                                }}
+                              />
+                              <button
+                                type="button"
+                                className="pn-btn pn-btn-primary pn-btn-sm"
+                                style={{ height: 24, padding: "0 8px", fontSize: 11, display: "flex", alignItems: "center" }}
+                                onClick={() => {
+                                  const input = document.getElementById(`direct-buyin-${p.phone}`) as HTMLInputElement;
+                                  const val = Number(input?.value);
+                                  if (val >= 1) {
+                                    handleDirectBuyin(p.phone, val);
+                                    if (input) input.value = "";
+                                  }
+                                }}
+                              >
+                                Add
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })}

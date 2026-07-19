@@ -115,7 +115,7 @@ export function BottomNav({ active, go }: BottomNavProps) {
         position: "sticky",
         bottom: 0,
         display: "flex",
-        background: "rgba(27,23,32,0.95)",
+        background: "rgba(13, 16, 21, 0.95)",
         backdropFilter: "blur(6px)",
         borderTop: "1px solid var(--hairline)",
         paddingBottom: 6,

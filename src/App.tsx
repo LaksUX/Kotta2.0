@@ -19,24 +19,24 @@ const GLOBAL_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500..700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
 
   :root {
-    --ink: #1B1720;
-    --surface: #241E2C;
-    --surface-raised: #2E2735;
-    --felt: #2F6F5E;
-    --felt-soft: #3E8971;
-    --gold: #D4A24C;
-    --gold-soft: #E8C77E;
-    --cream: #F3EDE4;
-    --muted: #9A93A6;
-    --danger: #C1544B;
-    --success: #6FA97D;
-    --hairline: rgba(243, 237, 228, 0.10);
+    --ink: #0A0D14;
+    --surface: #141A24;
+    --surface-raised: #1E2633;
+    --felt: #15452C;
+    --felt-soft: #1E633F;
+    --gold: #D4AF37;
+    --gold-soft: #F3D375;
+    --cream: #F6F5F2;
+    --muted: #8290A6;
+    --danger: #E06C75;
+    --success: #4EBA86;
+    --hairline: rgba(255, 255, 255, 0.08);
   }
 
   body {
     margin: 0;
     padding: 0;
-    background-color: #120F16;
+    background-color: #06080B;
     color: var(--cream);
     font-family: 'Inter', sans-serif;
   }
@@ -484,9 +484,10 @@ export default function App() {
         const loadedState = await loadAppState();
         const loadedSess = await loadSession();
 
-        // If app state is empty, seed it with high-quality demo data and auto-login as host
         const isFreshRun = Object.keys(loadedState.users).length === 0;
-        if (isFreshRun) {
+        const wasCleared = localStorage.getItem("pndata_cleared") === "true";
+
+        if (isFreshRun && !wasCleared) {
           const seeded = getSeedState();
           await saveAppState(seeded);
           setAppState(seeded);
@@ -533,6 +534,19 @@ export default function App() {
     setIsCreatingGame(false);
   };
 
+  const handleResetData = async () => {
+    if (window.confirm("Are you sure you want to completely wipe all ledger records, games, players, and log out? This action is permanent.")) {
+      localStorage.setItem("pndata_cleared", "true");
+      const emptyState = { users: {}, games: {}, invites: {}, buyins: {} };
+      await saveAppState(emptyState);
+      setAppState(emptyState);
+      await clearSessionStorage();
+      setSession(null);
+      setSelectedGame(null);
+      setIsCreatingGame(false);
+    }
+  };
+
   const handleSaveNewGame = async (newGame: Game) => {
     const nextGames = { ...appState.games, [newGame.id]: newGame };
     const nextState = { ...appState, games: nextGames };
@@ -546,7 +560,7 @@ export default function App() {
       <div
         style={{
           display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-          height: "100vh", backgroundColor: "#1B1720", color: "var(--cream)"
+          height: "100vh", backgroundColor: "var(--ink)", color: "var(--cream)"
         }}
       >
         <div style={{ fontSize: 18, fontFamily: "Fraunces, serif", color: "var(--gold)" }}>Loading Kotta Table...</div>
@@ -564,22 +578,33 @@ export default function App() {
       {!currentUser ? (
         <AuthScreen onAuth={handleAuthSuccess} />
       ) : (
-        <div className="lg:flex lg:flex-row lg:bg-[#120F16] lg:min-h-screen lg:justify-center lg:items-center lg:p-6">
-          <div className="w-full max-w-[460px] lg:max-w-[1024px] lg:h-[768px] lg:min-h-[768px] flex flex-col lg:flex-row bg-[#1B1720] text-[#F3EDE4] overflow-hidden rounded-none lg:rounded-3xl border lg:border-white/10 shadow-2xl relative">
+        <div className="lg:flex lg:flex-row lg:bg-[var(--ink)] lg:min-h-screen lg:justify-center lg:items-center lg:p-6">
+          <div className="w-full max-w-[460px] lg:max-w-[1024px] lg:h-[768px] lg:min-h-[768px] flex flex-col lg:flex-row bg-[var(--ink)] text-[var(--cream)] overflow-hidden rounded-none lg:rounded-3xl border lg:border-white/10 shadow-2xl relative">
             
             {/* Left Navigation Rail - Desktop only */}
-            <nav className="hidden lg:flex w-20 border-r border-white/10 flex-col items-center py-8 gap-8 bg-[#1B1720] shrink-0">
+            <nav className="hidden lg:flex w-20 border-r border-white/10 flex-col items-center py-8 gap-8 bg-[var(--ink)] shrink-0">
+              {/* Premium Logo / Crown Shield Emblem */}
               <div 
-                className="w-12 h-12 bg-[#D4A24C] rounded-xl flex items-center justify-center text-[#1B1720] font-bold text-xl shadow-lg shadow-black/40 cursor-pointer hover:opacity-90"
+                className="w-12 h-12 rounded-xl flex items-center justify-center cursor-pointer relative group transition-transform duration-300 hover:scale-105"
+                style={{
+                  background: "linear-gradient(135deg, var(--gold) 0%, var(--gold-soft) 100%)",
+                  boxShadow: "0 4px 12px rgba(212, 175, 55, 0.3)"
+                }}
                 onClick={() => { setSelectedGame(null); setIsCreatingGame(false); }}
+                title="Kotta Felt Board"
               >
-                K
+                {/* SVG Crown Shield Inside */}
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2L4 5V11C4 16.55 7.42 21.74 12 23C16.58 21.74 20 16.55 20 11V5L12 2Z" fill="var(--ink)" />
+                  <path d="M8 9L10 11L12 7L14 11L16 9" stroke="var(--gold-soft)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <circle cx="12" cy="14" r="2" fill="var(--gold-soft)" />
+                </svg>
               </div>
               
               <div className="flex flex-col gap-6">
                 {/* Home */}
                 <button 
-                  className={`p-3 rounded-xl transition-colors ${(!selectedGame && !isCreatingGame) ? "bg-white/10 text-[#D4A24C]" : "text-white/40 hover:bg-white/5"}`}
+                  className={`p-3 rounded-xl transition-colors ${(!selectedGame && !isCreatingGame) ? "bg-white/10 text-[var(--gold)]" : "text-white/40 hover:bg-white/5"}`}
                   onClick={() => { setSelectedGame(null); setIsCreatingGame(false); }}
                   title="Home Board"
                 >
@@ -587,7 +612,7 @@ export default function App() {
                 </button>
                 {/* Create Game */}
                 <button 
-                  className={`p-3 rounded-xl transition-colors ${isCreatingGame ? "bg-white/10 text-[#D4A24C]" : "text-white/40 hover:bg-white/5"}`}
+                  className={`p-3 rounded-xl transition-colors ${isCreatingGame ? "bg-white/10 text-[var(--gold)]" : "text-white/40 hover:bg-white/5"}`}
                   onClick={() => { setIsCreatingGame(true); setSelectedGame(null); }}
                   title="Host Game"
                 >
@@ -630,6 +655,7 @@ export default function App() {
                   onLogout={handleLogout}
                   onSelectGame={setSelectedGame}
                   onOpenCreateGame={() => setIsCreatingGame(true)}
+                  onResetData={handleResetData}
                 />
               )}
             </div>

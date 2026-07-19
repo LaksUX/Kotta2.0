@@ -21,9 +21,10 @@ interface DashboardProps {
   onLogout: () => void;
   onSelectGame: (game: Game) => void;
   onOpenCreateGame: () => void;
+  onResetData?: () => void;
 }
 
-export default function Dashboard({ currentUser, appState, onLogout, onSelectGame, onOpenCreateGame }: DashboardProps) {
+export default function Dashboard({ currentUser, appState, onLogout, onSelectGame, onOpenCreateGame, onResetData }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<"games" | "profile">("games");
   const [gamesFilter, setGamesFilter] = useState<"live" | "past">("live");
   const [ledgerSubTab, setLedgerSubTab] = useState<"player" | "host">("player");
@@ -48,7 +49,7 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
   return (
     <div className="pn-root">
       {/* App Header styled like the High Density Felt Board */}
-      <div className="pn-header flex items-center justify-between px-4 lg:px-8 h-20 border-b border-white/5 bg-[#1B1720]">
+      <div className="pn-header flex items-center justify-between px-4 lg:px-8 h-20 border-b border-white/5 bg-[var(--ink)]">
         <div className="flex items-center gap-4">
           <div className="lg:hidden">
             <Avatar phone={currentUser.phone} name={currentUser.name} size={36} />
@@ -134,11 +135,11 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
                 return (
                   <div
                     key={game.id}
-                    className="pn-card relative overflow-hidden cursor-pointer transition-transform hover:scale-[1.01] border border-white/10 hover:border-white/20 bg-[#241E2C] rounded-2xl p-6"
+                    className="pn-card relative overflow-hidden cursor-pointer transition-transform hover:scale-[1.01] border border-white/10 hover:border-white/20 bg-[var(--surface)] rounded-2xl p-6"
                     onClick={() => onSelectGame(game)}
                   >
                     {isUserHost && (
-                      <div className="absolute top-0 right-0 bg-[#D4A24C] text-[#1B1720] text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider">
+                      <div className="absolute top-0 right-0 bg-[var(--gold)] text-[var(--ink)] text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider">
                         HOSTING
                       </div>
                     )}
@@ -186,6 +187,11 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
                     <div className="flex justify-between items-center text-xs">
                       <span className="text-[#9A93A6]">
                         Buy-in: <strong className="pn-mono text-[#F3EDE4]">{game.initialBuyin} Banks</strong>
+                        {game.ratio && (
+                          <span className="ml-1.5 px-1.5 py-0.5 rounded text-[10px] bg-white/5 text-[#E8C77E] font-mono">
+                            {game.ratio} Blinds
+                          </span>
+                        )}
                       </span>
 
                       {game.status === "active" && (
@@ -223,6 +229,44 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
             <p className="text-[#9A93A6] text-sm">Overall performance across all sessions.</p>
           </div>
 
+          {/* Premium User Profile Card */}
+          <div className="bg-[var(--surface-raised)] border border-[var(--hairline)] rounded-2xl p-5 flex flex-col gap-4 shadow-xl">
+            <div className="flex items-center gap-4">
+              <div className="p-1 rounded-full border-2 border-[var(--gold)]">
+                <Avatar phone={currentUser.phone} name={currentUser.name} size={48} />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-serif text-lg font-semibold text-[var(--cream)]">{currentUser.name}</h3>
+                <span className="text-xs text-[var(--muted)]">{currentUser.phone}</span>
+              </div>
+              <span className="bg-[var(--gold)] text-[var(--ink)] text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider">
+                Member
+              </span>
+            </div>
+
+            <div className="flex gap-3 mt-1">
+              <button
+                type="button"
+                className="pn-btn pn-btn-ghost pn-btn-sm flex-1 text-xs text-[var(--cream)]"
+                onClick={onLogout}
+              >
+                <LogOut size={14} />
+                Sign Out
+              </button>
+              {onResetData && (
+                <button
+                  type="button"
+                  className="pn-btn pn-btn-sm flex-1 text-xs text-[var(--danger)] border border-[var(--danger)] hover:bg-[var(--danger)]/10"
+                  style={{ background: "transparent" }}
+                  onClick={onResetData}
+                  title="Wipe local database"
+                >
+                  Clear All Data
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* Ledger Selector Tabs */}
           {hostLedger.count > 0 && (
             <div className="flex gap-2">
@@ -247,40 +291,40 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
           {ledgerSubTab === "player" && (
             <>
               {/* Overall Balance Display */}
-              <div className="bg-[#2E2735] p-6 rounded-2xl border border-white/10 flex flex-col items-center justify-center relative overflow-hidden shadow-md">
-                <span className="text-[10px] text-[#9A93A6] uppercase tracking-widest mb-1 block">Total Net Profit</span>
-                <span className={`text-3xl font-mono font-bold ${playerLedger.totalNet >= 0 ? "text-[#6FA97D]" : "text-[#C1544B]"}`}>
+              <div className="bg-[var(--surface-raised)] p-6 rounded-2xl border border-white/10 flex flex-col items-center justify-center relative overflow-hidden shadow-md">
+                <span className="text-[10px] text-[var(--muted)] uppercase tracking-widest mb-1 block">Total Net Profit</span>
+                <span className={`text-3xl font-mono font-bold ${playerLedger.totalNet >= 0 ? "text-[var(--success)]" : "text-[var(--danger)]"}`}>
                   {playerLedger.totalNet > 0 ? `+${playerLedger.totalNet}` : playerLedger.totalNet}
                 </span>
-                <span className="text-[10px] text-[#9A93A6] mt-1">Banks</span>
+                <span className="text-[10px] text-[var(--muted)] mt-1">Banks</span>
               </div>
 
               {/* Stats Grid */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-[#241E2C] p-4 rounded-xl border border-white/5">
-                  <span className="text-[10px] text-[#9A93A6] uppercase block mb-1">Win Rate</span>
-                  <span className="text-xl font-mono font-bold text-[#6FA97D]">{playerLedger.winRate}%</span>
-                  <span className="text-[9px] text-[#9A93A6] block mt-0.5">
+                <div className="bg-[var(--surface)] p-4 rounded-xl border border-white/5">
+                  <span className="text-[10px] text-[var(--muted)] uppercase block mb-1">Win Rate</span>
+                  <span className="text-xl font-mono font-bold text-[var(--success)]">{playerLedger.winRate}%</span>
+                  <span className="text-[9px] text-[var(--muted)] block mt-0.5">
                     {playerLedger.sessions.filter(s => s.net > 0).length} of {playerLedger.count} games
                   </span>
                 </div>
 
-                <div className="bg-[#241E2C] p-4 rounded-xl border border-white/5">
-                  <span className="text-[10px] text-[#9A93A6] uppercase block mb-1">Avg Buy-in</span>
+                <div className="bg-[var(--surface)] p-4 rounded-xl border border-white/5">
+                  <span className="text-[10px] text-[var(--muted)] uppercase block mb-1">Avg Buy-in</span>
                   <span className="text-xl font-mono font-bold">{playerLedger.avgBuyin}</span>
-                  <span className="text-[9px] text-[#9A93A6] block mt-0.5">Banks per sitting</span>
+                  <span className="text-[9px] text-[var(--muted)] block mt-0.5">Banks per sitting</span>
                 </div>
 
-                <div className="bg-[#241E2C] p-4 rounded-xl border border-white/5">
-                  <span className="text-[10px] text-[#9A93A6] uppercase block mb-1">Biggest Scoop</span>
-                  <span className="text-xl font-mono font-bold text-[#6FA97D]">
+                <div className="bg-[var(--surface)] p-4 rounded-xl border border-white/5">
+                  <span className="text-[10px] text-[var(--muted)] uppercase block mb-1">Biggest Scoop</span>
+                  <span className="text-xl font-mono font-bold text-[var(--success)]">
                     {playerLedger.biggestWin > 0 ? `+${playerLedger.biggestWin}` : "—"}
                   </span>
                 </div>
 
-                <div className="bg-[#241E2C] p-4 rounded-xl border border-white/5">
-                  <span className="text-[10px] text-[#9A93A6] uppercase block mb-1">Worst Hit</span>
-                  <span className="text-xl font-mono font-bold text-[#C1544B]">
+                <div className="bg-[var(--surface)] p-4 rounded-xl border border-white/5">
+                  <span className="text-[10px] text-[var(--muted)] uppercase block mb-1">Worst Hit</span>
+                  <span className="text-xl font-mono font-bold text-[var(--danger)]">
                     {playerLedger.biggestLoss < 0 ? playerLedger.biggestLoss : "—"}
                   </span>
                 </div>
@@ -288,7 +332,7 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
 
               {/* Chart */}
               {playerLedger.chartData.length > 1 && (
-                <div className="bg-[#2E2735] rounded-2xl p-5 border border-white/10">
+                <div className="bg-[var(--surface-raised)] rounded-2xl p-5 border border-white/10">
                   <span className="text-xs text-[#9A93A6] uppercase tracking-wider mb-4 block">Bankroll Trend Trajectory</span>
                   <div className="h-32">
                     <ResponsiveContainer width="100%" height="100%">
@@ -320,7 +364,7 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
               )}
 
               {/* Sessions Log */}
-              <div className="bg-[#241E2C] rounded-2xl p-6 border border-white/10">
+              <div className="bg-[var(--surface)] rounded-2xl p-6 border border-white/10">
                 <span className="text-xs text-[#9A93A6] uppercase tracking-wider mb-4 block">Sessions Log ({playerLedger.count})</span>
                 {playerLedger.sessions.length === 0 ? (
                   <div className="text-xs text-[#9A93A6] text-center py-4">No game history yet.</div>
@@ -356,32 +400,32 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
           {ledgerSubTab === "host" && (
             <>
               {/* Total Room Rake */}
-              <div className="bg-[#2E2735] p-6 rounded-2xl border border-white/10 flex flex-col items-center justify-center">
-                <span className="text-[10px] text-[#9A93A6] uppercase tracking-widest mb-1 block">Accumulated Room Rake</span>
-                <span className="text-3xl font-mono font-bold text-[#D4A24C]">
+              <div className="bg-[var(--surface-raised)] p-6 rounded-2xl border border-white/10 flex flex-col items-center justify-center">
+                <span className="text-[10px] text-[var(--muted)] uppercase tracking-widest mb-1 block">Accumulated Room Rake</span>
+                <span className="text-3xl font-mono font-bold text-[var(--gold)]">
                   {hostLedger.totalRake}
                 </span>
-                <span className="text-[10px] text-[#9A93A6] mt-1">Banks</span>
+                <span className="text-[10px] text-[var(--muted)] mt-1">Banks</span>
               </div>
 
               {/* Stats Grid */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-[#241E2C] p-4 rounded-xl border border-white/5">
-                  <span className="text-[10px] text-[#9A93A6] uppercase block mb-1">Games Run</span>
-                  <span className="text-xl font-mono font-bold text-[#D4A24C]">{hostLedger.count}</span>
-                  <span className="text-[9px] text-[#9A93A6] block mt-0.5">As administrator</span>
+                <div className="bg-[var(--surface)] p-4 rounded-xl border border-white/5">
+                  <span className="text-[10px] text-[var(--muted)] uppercase block mb-1">Games Run</span>
+                  <span className="text-xl font-mono font-bold text-[var(--gold)]">{hostLedger.count}</span>
+                  <span className="text-[9px] text-[var(--muted)] block mt-0.5">As administrator</span>
                 </div>
 
-                <div className="bg-[#241E2C] p-4 rounded-xl border border-white/5">
-                  <span className="text-[10px] text-[#9A93A6] uppercase block mb-1">Total Volume</span>
+                <div className="bg-[var(--surface)] p-4 rounded-xl border border-white/5">
+                  <span className="text-[10px] text-[var(--muted)] uppercase block mb-1">Total Volume</span>
                   <span className="text-xl font-mono font-bold">{hostLedger.totalPot}</span>
-                  <span className="text-[9px] text-[#9A93A6] block mt-0.5">Banks in circulation</span>
+                  <span className="text-[9px] text-[var(--muted)] block mt-0.5">Banks in circulation</span>
                 </div>
               </div>
 
               {/* Chart */}
               {hostLedger.chartData.length > 1 && (
-                <div className="bg-[#2E2735] rounded-2xl p-5 border border-white/10">
+                <div className="bg-[var(--surface-raised)] rounded-2xl p-5 border border-white/10">
                   <span className="text-xs text-[#9A93A6] uppercase tracking-wider mb-4 block">Rake Generated Over Time</span>
                   <div className="h-32">
                     <ResponsiveContainer width="100%" height="100%">
@@ -412,7 +456,7 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
               )}
 
               {/* Hosted Games Log */}
-              <div className="bg-[#241E2C] rounded-2xl p-6 border border-white/10">
+              <div className="bg-[var(--surface)] rounded-2xl p-6 border border-white/10">
                 <span className="text-xs text-[#9A93A6] uppercase tracking-wider mb-4 block">Hosted Games Ledger</span>
                 <div className="flex flex-col gap-3">
                   {hostLedger.games.map((g) => (
