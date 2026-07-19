@@ -83,6 +83,7 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
 
   // Close Game / Cash Out Flow state
   const [isClosing, setIsClosing] = useState(false);
+  const [gameTab, setGameTab] = useState<"setup" | "live">("setup");
   const [cashoutMap, setCashoutMap] = useState<Record<string, number>>(() => {
     const initial: Record<string, number> = {};
     players.forEach((p) => {
@@ -356,99 +357,147 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
       </div>
 
       <div className="pn-body" style={{ overflowY: "auto" }}>
-        {/* Game Details Card */}
-        <div className="pn-card" style={{ marginBottom: 16 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-            <span style={{ fontSize: 13, color: "var(--gold)", fontWeight: 500 }}>Host: {game.hostName}</span>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-              <span className="pn-mono" style={{ fontSize: 13, color: "var(--cream)" }}>
-                Buy-in: {game.initialBuyin} Banks
-              </span>
-              {game.ratio && (
-                <span className="pn-mono" style={{ fontSize: 11, color: "var(--gold-soft)" }}>
-                  Stakes: {game.ratio} Blinds
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
-              <Calendar size={15} className="text-muted" style={{ color: "var(--gold-soft)" }} />
-              <span>{fmtDateTime(game.date, game.time)}</span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
-              <MapPin size={15} style={{ color: "var(--gold-soft)" }} />
-              <span>{game.venue}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Invite & Share Link Area */}
+        {/* Tab Headers - Only for active games */}
         {game.status === "active" && (
-          <div className="pn-card" style={{ marginBottom: 16, background: "rgba(214, 175, 55, 0.03)", border: "1px dashed rgba(212, 162, 76, 0.2)" }}>
-            <span className="pn-label" style={{ color: "var(--gold)", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-              <Sparkles size={14} /> Invite Players to Join
-            </span>
-            <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
-              Share this invite link. When players click it, they can sign up, join, and RSVP directly!
-            </p>
-            
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <input
-                className="pn-input pn-mono"
-                readOnly
-                value={`${window.location.origin}${window.location.pathname}?joinGame=${game.id}`}
-                style={{ padding: "8px 10px", fontSize: 11, height: 36, flex: 1, background: "var(--surface-raised)", color: "var(--gold-soft)" }}
-              />
-              <button
-                type="button"
-                className="pn-btn pn-btn-primary pn-btn-sm"
-                style={{ height: 36, whiteSpace: "nowrap", padding: "0 12px" }}
-                onClick={() => {
-                  const url = `${window.location.origin}${window.location.pathname}?joinGame=${game.id}`;
-                  navigator.clipboard.writeText(url);
-                  alert("📋 Invite link copied to clipboard!");
-                }}
-              >
-                Copy Link
-              </button>
-            </div>
-
-            <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-              <button
-                type="button"
-                className="pn-btn pn-btn-ghost pn-btn-sm"
-                style={{ flex: 1, fontSize: 11, padding: "6px 8px", background: "rgba(255, 255, 255, 0.02)" }}
-                onClick={() => {
-                  const url = `${window.location.origin}${window.location.pathname}?joinGame=${game.id}`;
-                  const text = `♠️ Join my poker game on Kotta!\n\n🏆 Game: ${game.title}\n📅 Date: ${fmtDateTime(game.date, game.time)}\n📍 Venue: ${game.venue}\n🪙 Buy-in: ${game.initialBuyin} Banks\n\n👉 Join & RSVP here: ${url}`;
-                  navigator.clipboard.writeText(text);
-                  alert("📋 Custom invitation message copied to clipboard! Share it in your WhatsApp group.");
-                }}
-              >
-                Copy Full Invite Text
-              </button>
-              
-              <button
-                type="button"
-                className="pn-btn pn-btn-felt pn-btn-sm"
-                style={{ flex: 1, fontSize: 11, padding: "6px 8px" }}
-                onClick={() => {
-                  const url = `${window.location.origin}${window.location.pathname}?joinGame=${game.id}`;
-                  const text = encodeURIComponent(`♠️ Join my poker game on Kotta!\n\n🏆 Game: ${game.title}\n📅 Date: ${fmtDateTime(game.date, game.time)}\n📍 Venue: ${game.venue}\n🪙 Buy-in: ${game.initialBuyin} Banks\n\n👉 Join & RSVP here: ${url}`);
-                  window.open(`https://wa.me/?text=${text}`, "_blank");
-                }}
-              >
-                WhatsApp Share
-              </button>
-            </div>
+          <div style={{ display: "flex", borderBottom: "1px solid var(--hairline)", background: "var(--surface)", marginBottom: 16, borderRadius: 8, overflow: "hidden" }}>
+            <button
+              type="button"
+              style={{
+                flex: 1,
+                borderRadius: 0,
+                background: gameTab === "setup" ? "rgba(214, 175, 55, 0.08)" : "transparent",
+                color: gameTab === "setup" ? "var(--gold)" : "var(--muted)",
+                borderBottom: gameTab === "setup" ? "2px solid var(--gold)" : "none",
+                fontSize: 13,
+                padding: "12px 8px",
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                border: "none",
+                cursor: "pointer"
+              }}
+              onClick={() => { setGameTab("setup"); setIsClosing(false); }}
+            >
+              <Users size={15} /> Setup &amp; Players
+            </button>
+            <button
+              type="button"
+              style={{
+                flex: 1,
+                borderRadius: 0,
+                background: gameTab === "live" ? "rgba(214, 175, 55, 0.08)" : "transparent",
+                color: gameTab === "live" ? "var(--gold)" : "var(--muted)",
+                borderBottom: gameTab === "live" ? "2px solid var(--gold)" : "none",
+                fontSize: 13,
+                padding: "12px 8px",
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                border: "none",
+                cursor: "pointer"
+              }}
+              onClick={() => setGameTab("live")}
+            >
+              <Coins size={15} /> Live &amp; Settle
+            </button>
           </div>
         )}
 
-        {/* --- GAME IS ACTIVE --- */}
-        {game.status === "active" && !isClosing && (
+        {/* --- TAB 1: SETUP & PLAYERS (Only when game is active & Setup tab is selected) --- */}
+        {game.status === "active" && gameTab === "setup" && (
           <>
+            {/* Game Details Card */}
+            <div className="pn-card" style={{ marginBottom: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+                <span style={{ fontSize: 13, color: "var(--gold)", fontWeight: 500 }}>Host: {game.hostName}</span>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+                  <span className="pn-mono" style={{ fontSize: 13, color: "var(--cream)" }}>
+                    Buy-in: {game.initialBuyin} Banks
+                  </span>
+                  {game.ratio && (
+                    <span className="pn-mono" style={{ fontSize: 11, color: "var(--gold-soft)" }}>
+                      Stakes: {game.ratio} Blinds
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
+                  <Calendar size={15} className="text-muted" style={{ color: "var(--gold-soft)" }} />
+                  <span>{fmtDateTime(game.date, game.time)}</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
+                  <MapPin size={15} style={{ color: "var(--gold-soft)" }} />
+                  <span>{game.venue}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Invite & Share Link Area */}
+            <div className="pn-card" style={{ marginBottom: 16, background: "rgba(214, 175, 55, 0.03)", border: "1px dashed rgba(212, 162, 76, 0.2)" }}>
+              <span className="pn-label" style={{ color: "var(--gold)", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+                <Sparkles size={14} /> Invite Players to Join
+              </span>
+              <p style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
+                Share this invite link. When players click it, they can sign up, join, and RSVP directly!
+              </p>
+              
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <input
+                  className="pn-input pn-mono"
+                  readOnly
+                  value={`${window.location.origin}${window.location.pathname}?joinGame=${game.id}`}
+                  style={{ padding: "8px 10px", fontSize: 11, height: 36, flex: 1, background: "var(--surface-raised)", color: "var(--gold-soft)" }}
+                />
+                <button
+                  type="button"
+                  className="pn-btn pn-btn-primary pn-btn-sm"
+                  style={{ height: 36, whiteSpace: "nowrap", padding: "0 12px" }}
+                  onClick={() => {
+                    const url = `${window.location.origin}${window.location.pathname}?joinGame=${game.id}`;
+                    navigator.clipboard.writeText(url);
+                    alert("📋 Invite link copied to clipboard!");
+                  }}
+                >
+                  Copy Link
+                </button>
+              </div>
+
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <button
+                  type="button"
+                  className="pn-btn pn-btn-ghost pn-btn-sm"
+                  style={{ flex: 1, fontSize: 11, padding: "6px 8px", background: "rgba(255, 255, 255, 0.02)" }}
+                  onClick={() => {
+                    const url = `${window.location.origin}${window.location.pathname}?joinGame=${game.id}`;
+                    const text = `♠️ Join my poker game on Kotta!\n\n🏆 Game: ${game.title}\n📅 Date: ${fmtDateTime(game.date, game.time)}\n📍 Venue: ${game.venue}\n🪙 Buy-in: ${game.initialBuyin} Banks\n\n👉 Join & RSVP here: ${url}`;
+                    navigator.clipboard.writeText(text);
+                    alert("📋 Custom invitation message copied to clipboard! Share it in your WhatsApp group.");
+                  }}
+                >
+                  Copy Full Invite Text
+                </button>
+                
+                <button
+                  type="button"
+                  className="pn-btn pn-btn-felt pn-btn-sm"
+                  style={{ flex: 1, fontSize: 11, padding: "6px 8px" }}
+                  onClick={() => {
+                    const url = `${window.location.origin}${window.location.pathname}?joinGame=${game.id}`;
+                    const text = encodeURIComponent(`♠️ Join my poker game on Kotta!\n\n🏆 Game: ${game.title}\n📅 Date: ${fmtDateTime(game.date, game.time)}\n📍 Venue: ${game.venue}\n🪙 Buy-in: ${game.initialBuyin} Banks\n\n👉 Join & RSVP here: ${url}`);
+                    window.open(`https://wa.me/?text=${text}`, "_blank");
+                  }}
+                >
+                  WhatsApp Share
+                </button>
+              </div>
+            </div>
+
             {/* Player RSVP Controls */}
             {!isHost && (
               <div className="pn-card" style={{ marginBottom: 16 }}>
@@ -476,6 +525,381 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
                     No
                   </button>
                 </div>
+              </div>
+            )}
+
+            {/* Host Player Add/Setup Panel */}
+            {isHost && (
+              <div className="pn-card" style={{ marginBottom: 16, border: "1px solid rgba(212,162,76,0.3)" }}>
+                <span className="pn-label" style={{ color: "var(--gold)", fontWeight: 600 }}>Host: Add &amp; Manage Players</span>
+
+                {/* Smart Find / Add Player */}
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                    <span style={{ fontSize: 12, color: "var(--muted)" }}>
+                      Find or Add sitting player directly
+                    </span>
+                    <button
+                      type="button"
+                      className="text-xs text-[var(--gold)] hover:underline bg-transparent border-none cursor-pointer"
+                      onClick={() => {
+                        setShowNewPlayerForm(!showNewPlayerForm);
+                        setManualAddError("");
+                      }}
+                    >
+                      {showNewPlayerForm ? "← Back to Search" : "🆕 Register Guest Player"}
+                    </button>
+                  </div>
+
+                  {!showNewPlayerForm ? (
+                    <>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <div style={{ flex: 1.5, minWidth: 120 }}>
+                          <input
+                            className="pn-input pn-mono"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Type player name or phone..."
+                            style={{ padding: "8px 12px", fontSize: 13, width: "100%" }}
+                          />
+                        </div>
+                        <div style={{ flex: 1, maxW: 100, minWidth: 80 }}>
+                          <input
+                            className="pn-input pn-mono"
+                            type="number"
+                            min={1}
+                            value={manualBuyinAmount}
+                            onChange={(e) => setManualBuyinAmount(Math.max(1, Number(e.target.value)))}
+                            placeholder="Amt"
+                            style={{ padding: "8px 12px", fontSize: 13, width: "100%" }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Search Matches List */}
+                      {matchingUsers.length > 0 && (
+                        <div style={{
+                          marginTop: 8, background: "rgba(0,0,0,0.3)", border: "1px solid var(--hairline)",
+                          borderRadius: 8, overflow: "hidden", display: "flex", flexDirection: "column"
+                        }}>
+                          {matchingUsers.map((u) => (
+                            <div
+                              key={u.phone}
+                              style={{
+                                display: "flex", alignItems: "center", justify: "space-between",
+                                padding: "8px 12px", borderBottom: "1px solid rgba(255,255,255,0.05)", fontSize: 12
+                              }}
+                            >
+                              <div>
+                                <span style={{ fontWeight: 600, color: "var(--cream)" }}>{u.name}</span>
+                                <span style={{ fontSize: 10, color: "var(--muted)", marginLeft: 6 }}>({u.phone})</span>
+                              </div>
+                              <button
+                                type="button"
+                                className="pn-btn pn-btn-primary pn-btn-sm"
+                                style={{ padding: "2px 8px", fontSize: 10, height: 22, width: "auto" }}
+                                onClick={() => handleAddExistingPlayer(u.phone, u.name)}
+                              >
+                                + Add &amp; Buy-in
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* If query has been typed but there are no matches, offer to register guest with that name */}
+                      {searchQuery.trim() && matchingUsers.length === 0 && (
+                        <div style={{ marginTop: 8, textAlign: "center", background: "rgba(255, 255, 255, 0.02)", padding: 10, borderRadius: 8, border: "1px dashed var(--hairline)" }}>
+                          <span style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 6 }}>
+                            No existing player matches "{searchQuery}"
+                          </span>
+                          <button
+                            type="button"
+                            className="pn-btn pn-btn-felt pn-btn-sm"
+                            style={{ margin: "0 auto", fontSize: 11, padding: "4px 10px" }}
+                            onClick={() => {
+                              setNewPlayerName(searchQuery);
+                              setShowNewPlayerForm(true);
+                            }}
+                          >
+                            🆕 Register guest: "{searchQuery}"
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div style={{ background: "rgba(0,0,0,0.15)", padding: 12, borderRadius: 10, border: "1px solid var(--hairline)", display: "flex", flexDirection: "column", gap: 10 }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: "var(--gold-soft)" }}>Register Guest Profile</span>
+                      <div>
+                        <label className="pn-label" style={{ marginBottom: 3 }}>Full Name</label>
+                        <input
+                          className="pn-input"
+                          value={newPlayerName}
+                          onChange={(e) => setNewPlayerName(e.target.value)}
+                          placeholder="e.g. Amit Sharma"
+                          style={{ padding: "6px 10px", fontSize: 13 }}
+                        />
+                      </div>
+                      <div>
+                        <label className="pn-label" style={{ marginBottom: 3 }}>Phone Number</label>
+                        <input
+                          className="pn-input pn-mono"
+                          value={newPlayerPhone}
+                          onChange={(e) => setNewPlayerPhone(e.target.value)}
+                          placeholder="e.g. 9819900000"
+                          style={{ padding: "6px 10px", fontSize: 13 }}
+                        />
+                      </div>
+                      <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                        <button
+                          type="button"
+                          className="pn-btn pn-btn-ghost pn-btn-sm"
+                          style={{ flex: 1, fontSize: 11, padding: "6px" }}
+                          onClick={() => {
+                            setShowNewPlayerForm(false);
+                            setManualAddError("");
+                          }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          className="pn-btn pn-btn-primary pn-btn-sm"
+                          style={{ flex: 1, fontSize: 11, padding: "6px" }}
+                          onClick={handleCreateAndAddGuest}
+                        >
+                          Save &amp; Buyin
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {manualAddError && (
+                    <span style={{ fontSize: 11, color: "var(--danger)", marginTop: 4, display: "block" }}>
+                      ⚠️ {manualAddError}
+                    </span>
+                  )}
+                </div>
+
+                {/* Manage Player RSVPs */}
+                <div>
+                  <span className="pn-label" style={{ marginBottom: 4, fontSize: 12, color: "var(--gold-soft)" }}>Manage Player RSVPs</span>
+                  <span style={{ fontSize: 11, color: "var(--muted)", display: "block", marginBottom: 6 }}>
+                    Adjust attendance of any registered player:
+                  </span>
+                  <div style={{ maxHeight: 150, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6, background: "rgba(0,0,0,0.15)", padding: 6, borderRadius: 8, border: "1px solid rgba(255,255,255,0.05)" }}>
+                    {Object.values(appState.users).map((user) => {
+                      if (user.phone === game.hostPhone) return null; // skip host
+                      const invite = Object.values(appState.invites).find(
+                        (i) => i.gameId === game.id && i.phone === user.phone
+                      );
+                      const currentRsvp = invite ? invite.rsvp : "pending";
+
+                      return (
+                        <div key={user.phone} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 11, borderBottom: "1px solid rgba(255,255,255,0.03)", paddingBottom: 4 }}>
+                          <span style={{ fontWeight: 500, color: "var(--cream)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "120px" }}>
+                            {user.name}
+                          </span>
+
+                          <div style={{ display: "flex", gap: 3 }}>
+                            <button
+                              type="button"
+                              className={`pn-tag-pill ${currentRsvp === "yes" ? "active" : ""}`}
+                              style={{ fontSize: 9, padding: "1px 4px", margin: 0 }}
+                              onClick={() => {
+                                const nextInvites = { ...appState.invites };
+                                const inviteId = invite ? invite.id : genId("invite");
+                                nextInvites[inviteId] = {
+                                  id: inviteId,
+                                  gameId: game.id,
+                                  phone: user.phone,
+                                  rsvp: "yes",
+                                  updatedAt: Date.now()
+                                };
+                                onUpdateState({ ...appState, invites: nextInvites });
+                              }}
+                            >
+                              Go
+                            </button>
+                            <button
+                              type="button"
+                              className={`pn-tag-pill ${currentRsvp === "maybe" ? "active" : ""}`}
+                              style={{ fontSize: 9, padding: "1px 4px", margin: 0 }}
+                              onClick={() => {
+                                const nextInvites = { ...appState.invites };
+                                const inviteId = invite ? invite.id : genId("invite");
+                                nextInvites[inviteId] = {
+                                  id: inviteId,
+                                  gameId: game.id,
+                                  phone: user.phone,
+                                  rsvp: "maybe",
+                                  updatedAt: Date.now()
+                                };
+                                onUpdateState({ ...appState, invites: nextInvites });
+                              }}
+                            >
+                              ?
+                            </button>
+                            <button
+                              type="button"
+                              className={`pn-tag-pill ${currentRsvp === "no" ? "active" : ""}`}
+                              style={{ fontSize: 9, padding: "1px 4px", margin: 0 }}
+                              onClick={() => {
+                                const nextInvites = { ...appState.invites };
+                                const inviteId = invite ? invite.id : genId("invite");
+                                nextInvites[inviteId] = {
+                                  id: inviteId,
+                                  gameId: game.id,
+                                  phone: user.phone,
+                                  rsvp: "no",
+                                  updatedAt: Date.now()
+                                };
+                                onUpdateState({ ...appState, invites: nextInvites });
+                              }}
+                            >
+                              No
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Players RSVPs Attendance Details */}
+            <div className="pn-card" style={{ marginBottom: 16 }}>
+              <span className="pn-label">RSVPs &amp; Attendance</span>
+              
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {/* Going */}
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--success)" }}>Going ({goingInvites.filter(i => i.phone !== game.hostPhone).length + 1})</span>
+                  </div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    <span className="pn-tag-pill active" style={{ fontSize: 11, padding: "4px 10px", pointerEvents: "none" }}>
+                      👑 {game.hostName} (Host)
+                    </span>
+                    {goingInvites.map((i) => {
+                      const user = appState.users[i.phone];
+                      if (!user || user.phone === game.hostPhone) return null;
+                      return (
+                        <span key={i.phone} className="pn-tag-pill active" style={{ fontSize: 11, padding: "4px 10px", pointerEvents: "none" }}>
+                          {user.name}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Maybe */}
+                {maybeInvites.length > 0 && (
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--gold-soft)" }}>Maybe ({maybeInvites.length})</span>
+                    </div>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {maybeInvites.map((i) => {
+                        const user = appState.users[i.phone];
+                        if (!user) return null;
+                        return (
+                          <span key={i.phone} className="pn-tag-pill" style={{ fontSize: 11, padding: "4px 10px", borderColor: "var(--gold-soft)", color: "var(--gold-soft)", pointerEvents: "none" }}>
+                            {user.name}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* No */}
+                {noInvites.length > 0 && (
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--danger)" }}>Not Going ({noInvites.length})</span>
+                    </div>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {noInvites.map((i) => {
+                        const user = appState.users[i.phone];
+                        if (!user) return null;
+                        return (
+                          <span key={i.phone} className="pn-tag-pill" style={{ fontSize: 11, padding: "4px 10px", borderColor: "var(--danger)", color: "var(--danger)", pointerEvents: "none" }}>
+                            {user.name}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* --- TAB 2: LIVE GAME & SETTLE (Only when game is active & Live tab is selected) --- */}
+        {game.status === "active" && gameTab === "live" && !isClosing && (
+          <>
+            {/* Host Administration: Pending Buyins to Approve */}
+            {isHost && (
+              <div className="pn-card" style={{ marginBottom: 16, border: "1px solid rgba(212,162,76,0.3)" }}>
+                <span className="pn-label" style={{ color: "var(--gold)", fontWeight: 600 }}>Host: Action Requests</span>
+                
+                {gameBuyins.filter((b) => b.status === "pending").length > 0 ? (
+                  <div style={{ marginTop: 6 }}>
+                    <span className="pn-label" style={{ fontSize: 11, color: "var(--gold-soft)" }}>Pending Buy-ins</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                      {gameBuyins.filter((b) => b.status === "pending").map((b) => {
+                        const user = appState.users[b.phone];
+                        return (
+                          <div
+                            key={b.id}
+                            style={{
+                              display: "flex", alignItems: "center", justify: "space-between",
+                              background: "var(--surface-raised)", padding: "8px 10px", borderRadius: 8
+                            }}
+                          >
+                            <div>
+                              <div style={{ fontSize: 13, fontWeight: 500 }}>{user?.name || b.phone}</div>
+                              <div className="pn-mono" style={{ fontSize: 11, color: "var(--muted)" }}>{b.amount} Banks</div>
+                            </div>
+                            <div style={{ display: "flex", gap: 6 }}>
+                              <button
+                                className="pn-icon-btn"
+                                onClick={() => handleBuyinAction(b.id, "approved")}
+                                style={{ background: "rgba(111,169,125,0.2)", color: "var(--success)" }}
+                              >
+                                <Check size={16} />
+                              </button>
+                              <button
+                                className="pn-icon-btn"
+                                onClick={() => handleBuyinAction(b.id, "rejected")}
+                                style={{ background: "rgba(193,84,75,0.2)", color: "var(--danger)" }}
+                              >
+                                <X size={16} />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 12, color: "var(--muted)", padding: "4px 0" }}>
+                    ✅ No pending buy-in requests to approve
+                  </div>
+                )}
+
+                <div className="pn-divider" />
+
+                <button
+                  className="pn-btn pn-btn-primary w-full"
+                  onClick={() => setIsClosing(true)}
+                  style={{ gap: 6, display: "flex", alignItems: "center", justifyContent: "center" }}
+                >
+                  <Play size={16} /> End Game &amp; Settle Up
+                </button>
               </div>
             )}
 
@@ -569,370 +993,6 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
                 )}
               </div>
             )}
-
-            {/* Host Administration Center */}
-            {isHost && (
-              <div className="pn-card" style={{ marginBottom: 16, border: "1px solid rgba(212,162,76,0.3)" }}>
-                <span className="pn-label" style={{ color: "var(--gold)", fontWeight: 600 }}>Host Dashboard</span>
-
-                {/* Smart Find / Add Player */}
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                    <span style={{ fontSize: 12, color: "var(--muted)" }}>
-                      Find or Add sitting player directly
-                    </span>
-                    <button
-                      type="button"
-                      className="text-xs text-[var(--gold)] hover:underline"
-                      onClick={() => {
-                        setShowNewPlayerForm(!showNewPlayerForm);
-                        setManualAddError("");
-                      }}
-                    >
-                      {showNewPlayerForm ? "← Back to Search" : "🆕 Register Guest Player"}
-                    </button>
-                  </div>
-
-                  {!showNewPlayerForm ? (
-                    <>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        <div style={{ flex: 1.5, minWidth: 120 }}>
-                          <input
-                            className="pn-input pn-mono"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Type player name or phone..."
-                            style={{ padding: "8px 12px", fontSize: 13, width: "100%" }}
-                          />
-                        </div>
-                        <div style={{ flex: 1, maxW: 100, minWidth: 80 }}>
-                          <input
-                            className="pn-input pn-mono"
-                            type="number"
-                            min={1}
-                            value={manualBuyinAmount}
-                            onChange={(e) => setManualBuyinAmount(Math.max(1, Number(e.target.value)))}
-                            placeholder="Amt"
-                            style={{ padding: "8px 12px", fontSize: 13, width: "100%" }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Search Matches List */}
-                      {matchingUsers.length > 0 && (
-                        <div style={{
-                          marginTop: 8, background: "rgba(0,0,0,0.3)", border: "1px solid var(--hairline)",
-                          borderRadius: 8, overflow: "hidden", display: "flex", flexDirection: "column"
-                        }}>
-                          {matchingUsers.map((u) => (
-                            <div
-                              key={u.phone}
-                              style={{
-                                display: "flex", alignItems: "center", justify: "space-between",
-                                padding: "8px 12px", borderBottom: "1px solid rgba(255,255,255,0.05)", fontSize: 12
-                              }}
-                            >
-                              <div>
-                                <span style={{ fontWeight: 600, color: "var(--cream)" }}>{u.name}</span>
-                                <span style={{ fontSize: 10, color: "var(--muted)", marginLeft: 6 }}>({u.phone})</span>
-                              </div>
-                              <button
-                                type="button"
-                                className="pn-btn pn-btn-primary pn-btn-sm"
-                                style={{ padding: "2px 8px", fontSize: 10, height: 22, width: "auto" }}
-                                onClick={() => handleAddExistingPlayer(u.phone, u.name)}
-                              >
-                                + Add &amp; Buy-in
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* If query has been typed but there are no matches, offer to register guest with that name */}
-                      {searchQuery.trim() && matchingUsers.length === 0 && (
-                        <div style={{ marginTop: 8, textAlign: "center", background: "rgba(255,255,255,0.02)", padding: 10, borderRadius: 8, border: "1px dashed var(--hairline)" }}>
-                          <span style={{ fontSize: 12, color: "var(--muted)", display: "block", marginBottom: 6 }}>
-                            No existing player matches "{searchQuery}"
-                          </span>
-                          <button
-                            type="button"
-                            className="pn-btn pn-btn-felt pn-btn-sm"
-                            style={{ margin: "0 auto", fontSize: 11, padding: "4px 10px" }}
-                            onClick={() => {
-                              setNewPlayerName(searchQuery);
-                              setShowNewPlayerForm(true);
-                            }}
-                          >
-                            🆕 Register guest: "{searchQuery}"
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div style={{ background: "rgba(0,0,0,0.15)", padding: 12, borderRadius: 10, border: "1px solid var(--hairline)", display: "flex", flexDirection: "column", gap: 10 }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: "var(--gold-soft)" }}>Register Guest Profile</span>
-                      <div>
-                        <label className="pn-label" style={{ marginBottom: 3 }}>Full Name</label>
-                        <input
-                          className="pn-input"
-                          value={newPlayerName}
-                          onChange={(e) => setNewPlayerName(e.target.value)}
-                          placeholder="e.g. Amit Sharma"
-                          style={{ padding: "6px 10px", fontSize: 13 }}
-                        />
-                      </div>
-                      <div>
-                        <label className="pn-label" style={{ marginBottom: 3 }}>Phone Number</label>
-                        <input
-                          className="pn-input pn-mono"
-                          value={newPlayerPhone}
-                          onChange={(e) => setNewPlayerPhone(e.target.value)}
-                          placeholder="e.g. 9819900000"
-                          style={{ padding: "6px 10px", fontSize: 13 }}
-                        />
-                      </div>
-                      <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-                        <button
-                          type="button"
-                          className="pn-btn pn-btn-ghost pn-btn-sm"
-                          style={{ flex: 1, fontSize: 11, padding: "6px" }}
-                          onClick={() => {
-                            setShowNewPlayerForm(false);
-                            setManualAddError("");
-                          }}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          className="pn-btn pn-btn-primary pn-btn-sm"
-                          style={{ flex: 1, fontSize: 11, padding: "6px" }}
-                          onClick={handleCreateAndAddGuest}
-                        >
-                          Save &amp; Buyin
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {manualAddError && (
-                    <span style={{ fontSize: 11, color: "var(--danger)", marginTop: 4, display: "block" }}>
-                      ⚠️ {manualAddError}
-                    </span>
-                  )}
-                </div>
-
-                {/* Manage Player RSVPs */}
-                <div style={{ marginBottom: 16 }}>
-                  <span className="pn-label" style={{ marginBottom: 4, fontSize: 12, color: "var(--gold-soft)" }}>Manage Player RSVPs</span>
-                  <span style={{ fontSize: 11, color: "var(--muted)", display: "block", marginBottom: 6 }}>
-                    Adjust attendance of any registered player:
-                  </span>
-                  <div style={{ maxHeight: 120, overflowY: "auto", display: "flex", flexDirection: "column", gap: 6, background: "rgba(0,0,0,0.15)", padding: 6, borderRadius: 8, border: "1px solid rgba(255,255,255,0.05)" }}>
-                    {Object.values(appState.users).map((user) => {
-                      if (user.phone === game.hostPhone) return null; // skip host
-                      const invite = Object.values(appState.invites).find(
-                        (i) => i.gameId === game.id && i.phone === user.phone
-                      );
-                      const currentRsvp = invite ? invite.rsvp : "pending";
-
-                      return (
-                        <div key={user.phone} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: 11, borderBottom: "1px solid rgba(255,255,255,0.03)", paddingBottom: 4 }}>
-                          <span style={{ fontWeight: 500, color: "var(--cream)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "120px" }}>
-                            {user.name}
-                          </span>
-
-                          <div style={{ display: "flex", gap: 3 }}>
-                            <button
-                              type="button"
-                              className={`pn-tag-pill ${currentRsvp === "yes" ? "active" : ""}`}
-                              style={{ fontSize: 9, padding: "1px 4px", margin: 0 }}
-                              onClick={() => {
-                                const nextInvites = { ...appState.invites };
-                                const inviteId = invite ? invite.id : genId("invite");
-                                nextInvites[inviteId] = {
-                                  id: inviteId,
-                                  gameId: game.id,
-                                  phone: user.phone,
-                                  rsvp: "yes",
-                                  updatedAt: Date.now()
-                                };
-                                onUpdateState({ ...appState, invites: nextInvites });
-                              }}
-                            >
-                              Go
-                            </button>
-                            <button
-                              type="button"
-                              className={`pn-tag-pill ${currentRsvp === "maybe" ? "active" : ""}`}
-                              style={{ fontSize: 9, padding: "1px 4px", margin: 0 }}
-                              onClick={() => {
-                                const nextInvites = { ...appState.invites };
-                                const inviteId = invite ? invite.id : genId("invite");
-                                nextInvites[inviteId] = {
-                                  id: inviteId,
-                                  gameId: game.id,
-                                  phone: user.phone,
-                                  rsvp: "maybe",
-                                  updatedAt: Date.now()
-                                };
-                                onUpdateState({ ...appState, invites: nextInvites });
-                              }}
-                            >
-                              ?
-                            </button>
-                            <button
-                              type="button"
-                              className={`pn-tag-pill ${currentRsvp === "no" ? "active" : ""}`}
-                              style={{ fontSize: 9, padding: "1px 4px", margin: 0 }}
-                              onClick={() => {
-                                const nextInvites = { ...appState.invites };
-                                const inviteId = invite ? invite.id : genId("invite");
-                                nextInvites[inviteId] = {
-                                  id: inviteId,
-                                  gameId: game.id,
-                                  phone: user.phone,
-                                  rsvp: "no",
-                                  updatedAt: Date.now()
-                                };
-                                onUpdateState({ ...appState, invites: nextInvites });
-                              }}
-                            >
-                              No
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Pending Buyins to Approve */}
-                {gameBuyins.filter((b) => b.status === "pending").length > 0 ? (
-                  <div style={{ marginTop: 12 }}>
-                    <span className="pn-label">Pending Buy-ins</span>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                      {gameBuyins.filter((b) => b.status === "pending").map((b) => {
-                        const user = appState.users[b.phone];
-                        return (
-                          <div
-                            key={b.id}
-                            style={{
-                              display: "flex", alignItems: "center", justifyContent: "space-between",
-                              background: "var(--surface-raised)", padding: "8px 10px", borderRadius: 8
-                            }}
-                          >
-                            <div>
-                              <div style={{ fontSize: 13, fontWeight: 500 }}>{user?.name || b.phone}</div>
-                              <div className="pn-mono" style={{ fontSize: 11, color: "var(--muted)" }}>{b.amount} Banks</div>
-                            </div>
-                            <div style={{ display: "flex", gap: 6 }}>
-                              <button
-                                className="pn-icon-btn"
-                                onClick={() => handleBuyinAction(b.id, "approved")}
-                                style={{ background: "rgba(111,169,125,0.2)", color: "var(--success)" }}
-                              >
-                                <Check size={16} />
-                              </button>
-                              <button
-                                className="pn-icon-btn"
-                                onClick={() => handleBuyinAction(b.id, "rejected")}
-                                style={{ background: "rgba(193,84,75,0.2)", color: "var(--danger)" }}
-                              >
-                                <X size={16} />
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ fontSize: 12, color: "var(--muted)", padding: "4px 0" }}>
-                    ✅ No pending buy-in requests
-                  </div>
-                )}
-
-                <div className="pn-divider" />
-
-                <button
-                  className="pn-btn pn-btn-primary"
-                  onClick={() => setIsClosing(true)}
-                  style={{ gap: 6 }}
-                >
-                  <Play size={16} /> End Game &amp; Settle Up
-                </button>
-              </div>
-            )}
-
-            {/* Players RSVPs Attendance Details */}
-            <div className="pn-card" style={{ marginBottom: 16 }}>
-              <span className="pn-label">RSVPs &amp; Attendance</span>
-              
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {/* Going */}
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--success)" }}>Going ({goingInvites.filter(i => i.phone !== game.hostPhone).length + 1})</span>
-                  </div>
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    <span className="pn-tag-pill active" style={{ fontSize: 11, padding: "4px 10px", pointerEvents: "none" }}>
-                      👑 {game.hostName} (Host)
-                    </span>
-                    {goingInvites.map((i) => {
-                      const user = appState.users[i.phone];
-                      if (!user || user.phone === game.hostPhone) return null;
-                      return (
-                        <span key={i.phone} className="pn-tag-pill active" style={{ fontSize: 11, padding: "4px 10px", pointerEvents: "none" }}>
-                          {user.name}
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Maybe */}
-                {maybeInvites.length > 0 && (
-                  <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--gold-soft)" }}>Maybe ({maybeInvites.length})</span>
-                    </div>
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      {maybeInvites.map((i) => {
-                        const user = appState.users[i.phone];
-                        if (!user) return null;
-                        return (
-                          <span key={i.phone} className="pn-tag-pill" style={{ fontSize: 11, padding: "4px 10px", borderColor: "var(--gold-soft)", color: "var(--gold-soft)", pointerEvents: "none" }}>
-                            {user.name}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* No */}
-                {noInvites.length > 0 && (
-                  <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--danger)" }}>Not Going ({noInvites.length})</span>
-                    </div>
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                      {noInvites.map((i) => {
-                        const user = appState.users[i.phone];
-                        if (!user) return null;
-                        return (
-                          <span key={i.phone} className="pn-tag-pill" style={{ fontSize: 11, padding: "4px 10px", borderColor: "var(--danger)", color: "var(--danger)", pointerEvents: "none" }}>
-                            {user.name}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
 
             {/* Players and Buyins List */}
             <div className="pn-card">
@@ -1049,8 +1109,8 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
           </>
         )}
 
-        {/* --- SETTLEMENT INPUT MODE (Host Only) --- */}
-        {game.status === "active" && isClosing && (
+        {/* --- SETTLEMENT INPUT MODE (Host Only, under Live Game & Settle tab) --- */}
+        {game.status === "active" && gameTab === "live" && isClosing && (
           <div className="pn-card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <span className="pn-label" style={{ margin: 0, fontSize: 14 }}>Cash Out Entry Ledger</span>
@@ -1149,9 +1209,37 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
           </div>
         )}
 
-        {/* --- GAME IS CLOSED: RESULTS REPORT --- */}
+        {/* --- GAME IS CLOSED: RESULTS REPORT (No tabs, always visible for finished games) --- */}
         {game.status === "closed" && game.results && (
           <>
+            {/* Game Details Card (Static) */}
+            <div className="pn-card" style={{ marginBottom: 16 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+                <span style={{ fontSize: 13, color: "var(--gold)", fontWeight: 500 }}>Host: {game.hostName}</span>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+                  <span className="pn-mono" style={{ fontSize: 13, color: "var(--cream)" }}>
+                    Buy-in: {game.initialBuyin} Banks
+                  </span>
+                  {game.ratio && (
+                    <span className="pn-mono" style={{ fontSize: 11, color: "var(--gold-soft)" }}>
+                      Stakes: {game.ratio} Blinds
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
+                  <Calendar size={15} className="text-muted" style={{ color: "var(--gold-soft)" }} />
+                  <span>{fmtDateTime(game.date, game.time)}</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14 }}>
+                  <MapPin size={15} style={{ color: "var(--gold-soft)" }} />
+                  <span>{game.venue}</span>
+                </div>
+              </div>
+            </div>
+
             {/* Financial summary card */}
             <div className="pn-card" style={{ marginBottom: 16 }}>
               <span className="pn-label">Settle-up Report</span>
@@ -1186,7 +1274,7 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
               </span>
 
               {financials.settlement.length === 0 ? (
-                <div style={{ textAlignment: "center", color: "var(--success)", fontSize: 13, padding: "10px 0" }}>
+                <div style={{ textAlign: "center", color: "var(--success)", fontSize: 13, padding: "10px 0" }}>
                   🎉 No transaction settlement is needed! Everyone broke perfectly even.
                 </div>
               ) : (
@@ -1228,7 +1316,6 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
                 {players.map((p) => {
                   const res = game.results![p.phone];
                   if (!res) return null;
-                  const isWinner = res.net > 0.001;
                   return (
                     <div
                       key={p.phone}

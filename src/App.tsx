@@ -526,22 +526,8 @@ export default function App() {
       try {
         const loadedState = await loadAppState();
         const loadedSess = await loadSession();
-
-        const isFreshRun = Object.keys(loadedState.users).length === 0;
-        const wasCleared = localStorage.getItem("pndata_cleared") === "true";
-
-        if (isFreshRun && !wasCleared) {
-          const seeded = getSeedState();
-          await saveAppState(seeded);
-          setAppState(seeded);
-
-          const defaultSess = { phone: "9876543210" }; // Pre-login as host Rohan Mehta
-          await saveSession(defaultSess);
-          setSession(defaultSess);
-        } else {
-          setAppState(loadedState);
-          setSession(loadedSess);
-        }
+        setAppState(loadedState);
+        setSession(loadedSess);
       } catch (e) {
         console.error("Storage load failed", e);
       } finally {

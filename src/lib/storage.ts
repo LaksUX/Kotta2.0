@@ -50,6 +50,21 @@ export const storageAdapter = {
 
 export async function loadAppState(): Promise<AppState> {
   try {
+    const res = await fetch("/api/state");
+    if (res.ok) {
+      const parsed = await res.json();
+      return {
+        users: parsed.users || {},
+        games: parsed.games || {},
+        invites: parsed.invites || {},
+        buyins: parsed.buyins || {},
+      };
+    }
+  } catch (e) {
+    console.warn("loadAppState from server failed, falling back to localStorage", e);
+  }
+
+  try {
     const res = await storageAdapter.get(STATE_KEY, true);
     if (res && res.value) {
       const parsed = JSON.parse(res.value);
@@ -67,6 +82,16 @@ export async function loadAppState(): Promise<AppState> {
 }
 
 export async function saveAppState(state: AppState): Promise<void> {
+  try {
+    await fetch("/api/state", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(state)
+    });
+  } catch (e) {
+    console.error("saveState to server failed", e);
+  }
+
   try {
     await storageAdapter.set(STATE_KEY, JSON.stringify(state), true);
   } catch (e) {
