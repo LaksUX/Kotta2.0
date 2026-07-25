@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import { AppState, Game, Session, User } from "../types";
 import { computePlayerLedger, computeHostLedger, fmtDateTime, copyToClipboard, shareInvite } from "../lib/storage";
+import { BUILD_NUMBER, BUILD_TAG } from "../version";
 import { Avatar, RsvpBadge, ChipHero, EmptyState, BottomNav } from "./Atoms";
 import HoysalaLogo from "./HoysalaLogo";
 
@@ -596,6 +597,10 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
               </div>
             </>
           )}
+
+          <div style={{ textAlign: "center", marginTop: 20, marginBottom: 10, fontSize: 10, fontFamily: "var(--font-mono)", color: "rgba(243, 237, 228, 0.25)", letterSpacing: "0.05em" }}>
+            Build {BUILD_NUMBER} • {BUILD_TAG}
+          </div>
         </div>
       </div>
 

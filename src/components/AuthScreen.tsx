@@ -7,6 +7,7 @@ import { useState, FormEvent } from "react";
 import { ShieldCheck, Loader2, Sparkles, Calendar, MapPin, Coins, Users } from "lucide-react";
 import { AppState, Session } from "../types";
 import { hashPin, loadAppState, saveAppState, saveSession, fmtDateTime } from "../lib/storage";
+import { BUILD_NUMBER, BUILD_TAG } from "../version";
 import HoysalaLogo from "./HoysalaLogo";
 
 interface AuthScreenProps {
@@ -302,7 +303,7 @@ export default function AuthScreen({ onAuth, pendingJoinGameId, appState }: Auth
           </div>
 
           <div style={{ textAlign: "center", marginTop: 12, fontSize: 10, fontFamily: "var(--font-mono)", color: "rgba(243, 237, 228, 0.25)", letterSpacing: "0.05em" }}>
-            Build 2.4.12 • Production Stable
+            Build {BUILD_NUMBER} • {BUILD_TAG}
           </div>
         </div>
       </div>
