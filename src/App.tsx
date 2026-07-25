@@ -654,54 +654,71 @@ export default function App() {
     }
   }, []);
 
-  // Redirect to join game if user is logged in
+  // Redirect to join game or clean up invalid pendingJoinGameId
   useEffect(() => {
-    const currentUser = session ? appState.users[session.phone] : null;
-    if (currentUser && pendingJoinGameId && appState.games[pendingJoinGameId]) {
+    if (loading) return;
+
+    if (pendingJoinGameId) {
       const gameToJoin = appState.games[pendingJoinGameId];
-      const existingInvite = (Object.values(appState.invites) as Invite[]).find(
-        (i) => i.gameId === pendingJoinGameId && i.phone === currentUser.phone
-      );
-      if (!existingInvite) {
-        // Auto RSVP going to make it frictionless
-        const inviteId = "inv_" + Date.now();
-        const nextInvites = {
-          ...appState.invites,
-          [inviteId]: {
-            id: inviteId,
-            gameId: pendingJoinGameId,
-            phone: currentUser.phone,
-            rsvp: "yes",
-            updatedAt: Date.now()
-          }
-        };
-        handleUpdateAppState({ ...appState, invites: nextInvites });
+
+      if (!gameToJoin) {
+        // Game no longer exists or was cleared
+        setPendingJoinGameId(null);
+        try {
+          sessionStorage.removeItem("pn_pending_join");
+          const url = new URL(window.location.href);
+          url.searchParams.delete("joinGame");
+          window.history.replaceState({}, document.title, url.pathname);
+        } catch {}
+        return;
       }
 
-      setSelectedGame(gameToJoin);
-      setPendingJoinGameId(null);
-      try {
-        sessionStorage.removeItem("pn_pending_join");
-      } catch {}
-
-      // Trigger notification for joining table
-      addAppNotifications([
-        {
-          id: `joined_table_${gameToJoin.id}_${Date.now()}`,
-          message: `🎉 Joined table "${gameToJoin.title}" hosted by ${gameToJoin.hostName}!`,
-          type: "invite",
-          timestamp: Date.now()
+      const currentUser = session ? appState.users[session.phone] : null;
+      if (currentUser) {
+        const existingInvite = (Object.values(appState.invites) as Invite[]).find(
+          (i) => i.gameId === pendingJoinGameId && i.phone === currentUser.phone
+        );
+        if (!existingInvite) {
+          // Auto RSVP going to make it frictionless
+          const inviteId = "inv_" + Date.now();
+          const nextInvites = {
+            ...appState.invites,
+            [inviteId]: {
+              id: inviteId,
+              gameId: pendingJoinGameId,
+              phone: currentUser.phone,
+              rsvp: "yes",
+              updatedAt: Date.now()
+            }
+          };
+          handleUpdateAppState({ ...appState, invites: nextInvites });
         }
-      ]);
 
-      // Clean up search query param cleanly
-      try {
-        const url = new URL(window.location.href);
-        url.searchParams.delete("joinGame");
-        window.history.replaceState({}, document.title, url.pathname);
-      } catch {}
+        setSelectedGame(gameToJoin);
+        setPendingJoinGameId(null);
+        try {
+          sessionStorage.removeItem("pn_pending_join");
+        } catch {}
+
+        // Trigger notification for joining table
+        addAppNotifications([
+          {
+            id: `joined_table_${gameToJoin.id}_${Date.now()}`,
+            message: `🎉 Joined table "${gameToJoin.title}" hosted by ${gameToJoin.hostName}!`,
+            type: "invite",
+            timestamp: Date.now()
+          }
+        ]);
+
+        // Clean up search query param cleanly
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.delete("joinGame");
+          window.history.replaceState({}, document.title, url.pathname);
+        } catch {}
+      }
     }
-  }, [session, pendingJoinGameId, appState.games]);
+  }, [session, pendingJoinGameId, appState.games, loading]);
 
   // Initialize and load persistent data
   useEffect(() => {
@@ -866,6 +883,13 @@ export default function App() {
     setSession(null);
     setSelectedGame(null);
     setIsCreatingGame(false);
+    setPendingJoinGameId(null);
+    try {
+      sessionStorage.removeItem("pn_pending_join");
+      const url = new URL(window.location.href);
+      url.searchParams.delete("joinGame");
+      window.history.replaceState({}, document.title, url.pathname);
+    } catch {}
   };
 
   const handleResetData = async () => {
@@ -878,6 +902,13 @@ export default function App() {
       setSession(null);
       setSelectedGame(null);
       setIsCreatingGame(false);
+      setPendingJoinGameId(null);
+      try {
+        sessionStorage.removeItem("pn_pending_join");
+        const url = new URL(window.location.href);
+        url.searchParams.delete("joinGame");
+        window.history.replaceState({}, document.title, url.pathname);
+      } catch {}
     }
   };
 
@@ -890,6 +921,13 @@ export default function App() {
       setSession(null);
       setSelectedGame(null);
       setIsCreatingGame(false);
+      setPendingJoinGameId(null);
+      try {
+        sessionStorage.removeItem("pn_pending_join");
+        const url = new URL(window.location.href);
+        url.searchParams.delete("joinGame");
+        window.history.replaceState({}, document.title, url.pathname);
+      } catch {}
     }
   };
 

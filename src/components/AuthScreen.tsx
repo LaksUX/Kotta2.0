@@ -141,12 +141,6 @@ export default function AuthScreen({ onAuth, pendingJoinGameId, appState }: Auth
                 👉 Enter your details below to enter this table!
               </p>
             </div>
-          ) : pendingJoinGameId ? (
-            <div className="pn-card mb-6 border border-white/10 bg-white/5 text-center py-4">
-              <div className="flex items-center justify-center gap-2 text-xs text-[var(--gold)] font-mono">
-                <Loader2 size={14} className="animate-spin" /> Fetching Shared Table Info...
-              </div>
-            </div>
           ) : null}
 
           <div className="pn-card">
