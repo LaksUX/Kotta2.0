@@ -201,6 +201,38 @@ export async function copyToClipboard(text: string): Promise<boolean> {
 }
 
 /**
+ * Triggers native Web Share or opens WhatsApp directly with fallback to clipboard copy
+ */
+export async function shareInvite(msg: string, title: string = "Kotta Poker Night Invite"): Promise<"shared" | "whatsapp" | "copied"> {
+  if (typeof window !== "undefined" && navigator.share) {
+    try {
+      await navigator.share({
+        title,
+        text: msg,
+      });
+      return "shared";
+    } catch (e) {
+      console.debug("Native share cancelled or failed, using fallback:", e);
+    }
+  }
+
+  // Try opening WhatsApp directly
+  const waUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+  let opened = false;
+  try {
+    const win = window.open(waUrl, "_blank");
+    if (win) opened = true;
+  } catch (e) {
+    console.debug("WhatsApp window open blocked:", e);
+  }
+
+  // Always copy to clipboard as well for convenience
+  await copyToClipboard(msg);
+
+  return opened ? "whatsapp" : "copied";
+}
+
+/**
  * Plays a subtle, realistic poker chip clink sound effect using the browser Web Audio API
  */
 export function playChipClinkSound() {

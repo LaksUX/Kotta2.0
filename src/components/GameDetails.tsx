@@ -12,7 +12,7 @@ import { AppState, Game, Invite, Buyin, User } from "../types";
 import { Avatar } from "./Atoms";
 import {
   fmtDateTime, getConfirmedPlayers, computeGameFinancials,
-  genId, round2, copyToClipboard
+  genId, round2, copyToClipboard, shareInvite
 } from "../lib/storage";
 
 interface GameDetailsProps {
@@ -273,7 +273,7 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
     setToastMsg(`✅ Added ${name} directly to the table with buy-in.`);
   }
 
-  function handleInviteExistingPlayer(phone: string, name: string) {
+  async function handleInviteExistingPlayer(phone: string, name: string) {
     setManualAddError("");
     const cleanPhone = phone.replace(/\D/g, "");
     if (!cleanPhone) return;
@@ -295,7 +295,12 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
     onUpdateState({ ...appState, invites: nextInvites });
     setSearchQuery("");
     setManualBuyinAmount(game.initialBuyin);
-    setToastMsg(`✉️ Sent RSVP invitation to ${name}!`);
+    setToastMsg(`✉️ Saved invite for ${name}!`);
+
+    const url = `${window.location.origin}${window.location.pathname}?joinGame=${game.id}`;
+    const msg = `🃏 *POKER NIGHT INVITATION* 🃏\n\nHey ${name}! ${game.hostName} has invited you to play at *${game.title}*!\n\n📅 *Date:* ${fmtDateTime(game.date, game.time)}\n📍 *Venue:* ${game.venue}\n💰 *Buy-in:* ${game.initialBuyin} Banks\n\n👉 *RSVP & Join Table:* ${url}`;
+
+    await shareInvite(msg, `Poker Invite for ${name}`);
   }
 
   function handleCreateAndAddGuest() {
@@ -578,8 +583,14 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
 
                   msg += `\n👉 *Join & RSVP here:* ${url}`;
 
-                  await copyToClipboard(msg);
-                  setToastMsg("📋 RSVP list & invite link copied to clipboard!");
+                  const res = await shareInvite(msg, `Poker RSVP: ${game.title}`);
+                  if (res === "shared") {
+                    setToastMsg("💬 Shared RSVP list & table invite link!");
+                  } else if (res === "whatsapp") {
+                    setToastMsg("💬 Opened WhatsApp with table invitation!");
+                  } else {
+                    setToastMsg("📋 RSVP list & invite link copied to clipboard!");
+                  }
                 }}
               >
                 💬 Share RSVP
@@ -832,7 +843,7 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
                               type="button"
                               className={`pn-tag-pill ${currentRsvp === "pending" && invite ? "active" : ""}`}
                               style={{ fontSize: 9, padding: "1px 4px", margin: 0 }}
-                              onClick={() => {
+                              onClick={async () => {
                                 const nextInvites = { ...appState.invites };
                                 const inviteId = invite ? invite.id : genId("invite");
                                 nextInvites[inviteId] = {
@@ -843,6 +854,12 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
                                   updatedAt: Date.now()
                                 };
                                 onUpdateState({ ...appState, invites: nextInvites });
+                                setToastMsg(`✉️ Saved invite for ${user.name}!`);
+
+                                const url = `${window.location.origin}${window.location.pathname}?joinGame=${game.id}`;
+                                const msg = `🃏 *POKER NIGHT INVITATION* 🃏\n\nHey ${user.name}! ${game.hostName} has invited you to play at *${game.title}*!\n\n📅 *Date:* ${fmtDateTime(game.date, game.time)}\n📍 *Venue:* ${game.venue}\n💰 *Buy-in:* ${game.initialBuyin} Banks\n\n👉 *RSVP & Join Table:* ${url}`;
+
+                                await shareInvite(msg, `Poker Invite for ${user.name}`);
                               }}
                             >
                               Invite

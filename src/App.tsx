@@ -543,17 +543,17 @@ function getNewNotifications(prev: AppState, next: AppState, userPhone: string):
 
       // A. Player getting invited or added
       if (nextInvite.phone === userPhone) {
-        if (!prevInvite) {
-          if (nextInvite.rsvp === "yes") {
+        if (!prevInvite || prevInvite.rsvp !== nextInvite.rsvp) {
+          if (nextInvite.rsvp === "yes" && (!prevInvite || prevInvite.rsvp !== "yes")) {
             list.push({
-              id: `invite_${nextInvite.id}`,
-              message: `🃏 You were added to table "${game.title}" by ${game.hostName}!`,
+              id: `invite_${nextInvite.id}_yes_${Date.now()}`,
+              message: `🃏 You were added & confirmed for table "${game.title}" by ${game.hostName}!`,
               type: "invite",
               timestamp: Date.now()
             });
-          } else {
+          } else if (nextInvite.rsvp === "pending" && !prevInvite) {
             list.push({
-              id: `invite_${nextInvite.id}`,
+              id: `invite_${nextInvite.id}_pending_${Date.now()}`,
               message: `🃏 You're invited to play in "${game.title}" by ${game.hostName}!`,
               type: "invite",
               timestamp: Date.now()
@@ -678,9 +678,9 @@ export default function App() {
         const existingInvite = (Object.values(appState.invites) as Invite[]).find(
           (i) => i.gameId === pendingJoinGameId && i.phone === currentUser.phone
         );
-        if (!existingInvite) {
+        if (!existingInvite || existingInvite.rsvp !== "yes") {
           // Auto RSVP going to make it frictionless
-          const inviteId = "inv_" + Date.now();
+          const inviteId = existingInvite ? existingInvite.id : "inv_" + Date.now();
           const nextInvites = {
             ...appState.invites,
             [inviteId]: {

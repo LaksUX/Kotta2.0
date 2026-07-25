@@ -12,7 +12,7 @@ import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid
 } from "recharts";
 import { AppState, Game, Session, User } from "../types";
-import { computePlayerLedger, computeHostLedger, fmtDateTime, copyToClipboard } from "../lib/storage";
+import { computePlayerLedger, computeHostLedger, fmtDateTime, copyToClipboard, shareInvite } from "../lib/storage";
 import { Avatar, RsvpBadge, ChipHero, EmptyState, BottomNav } from "./Atoms";
 import HoysalaLogo from "./HoysalaLogo";
 
@@ -277,15 +277,17 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
                           onClick={async () => {
                             const url = `${window.location.origin}${window.location.pathname}?joinGame=${game.id}`;
                             const msg = `🃏 *POKER NIGHT DETAILS* 🃏\n\n🏆 *${game.title}*\n📅 *Date:* ${fmtDateTime(game.date, game.time)}\n📍 *Venue:* ${game.venue}\n💰 *Buy-in:* ${game.initialBuyin} Banks\n\n👉 *RSVP & Join Table:* ${url}`;
-                            const success = await copyToClipboard(msg);
-                            if (success) {
-                              alert("📋 Table invitation link & details copied to clipboard! Share on WhatsApp or SMS.");
+                            const res = await shareInvite(msg, `Poker Night: ${game.title}`);
+                            if (res === "shared") {
+                              // Native share sheet used
+                            } else if (res === "whatsapp") {
+                              // WhatsApp opened
                             } else {
-                              alert(`Copy this link to share: ${url}`);
+                              alert("📋 Invitation details & join link copied to clipboard! Share on WhatsApp or SMS.");
                             }
                           }}
                         >
-                          Share Details 📋
+                          Share Details 💬
                         </button>
                       </div>
                     )}
