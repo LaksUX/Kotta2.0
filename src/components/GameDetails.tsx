@@ -12,7 +12,7 @@ import { AppState, Game, Invite, Buyin, User } from "../types";
 import { Avatar } from "./Atoms";
 import {
   fmtDateTime, getConfirmedPlayers, computeGameFinancials,
-  genId, round2
+  genId, round2, copyToClipboard
 } from "../lib/storage";
 
 interface GameDetailsProps {
@@ -525,7 +525,7 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
                 type="button"
                 className="pn-btn pn-btn-primary"
                 style={{ width: "100%", gap: 6, display: "flex", alignItems: "center", justifyContent: "center", padding: "10px 14px", fontSize: 13 }}
-                onClick={() => {
+                onClick={async () => {
                   const url = `${window.location.origin}${window.location.pathname}?joinGame=${game.id}`;
                   
                   const goingNames: string[] = ["👑 " + game.hostName + " (Host)"];
@@ -578,8 +578,8 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
 
                   msg += `\n👉 *Join & RSVP here:* ${url}`;
 
-                  navigator.clipboard.writeText(msg);
-                  setToastMsg("📋 RSVP list copied to clipboard!");
+                  await copyToClipboard(msg);
+                  setToastMsg("📋 RSVP list & invite link copied to clipboard!");
                 }}
               >
                 💬 Share RSVP

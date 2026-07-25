@@ -12,7 +12,7 @@ import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid
 } from "recharts";
 import { AppState, Game, Session, User } from "../types";
-import { computePlayerLedger, computeHostLedger, fmtDateTime } from "../lib/storage";
+import { computePlayerLedger, computeHostLedger, fmtDateTime, copyToClipboard } from "../lib/storage";
 import { Avatar, RsvpBadge, ChipHero, EmptyState, BottomNav } from "./Atoms";
 import HoysalaLogo from "./HoysalaLogo";
 
@@ -274,11 +274,15 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
                         <button
                           type="button"
                           className="text-[11px] text-[var(--gold)] hover:underline font-serif"
-                          onClick={() => {
-                            const url = `${window.location.origin}/?joinGame=${game.id}`;
-                            const msg = `🃏 *POKER NIGHT DETAILS* 🃏\n\n🏆 *${game.title}*\n📅 *Date:* ${game.date}\n⏰ *Time:* ${game.time || "N/A"}\n📍 *Venue:* ${game.venue}\n💰 *Buy-in:* ${game.initialBuyin} Banks\n\n👉 *RSVP here:* ${url}`;
-                            navigator.clipboard.writeText(msg);
-                            alert("📋 Event invitation details copied to clipboard! Share on WhatsApp/SMS.");
+                          onClick={async () => {
+                            const url = `${window.location.origin}${window.location.pathname}?joinGame=${game.id}`;
+                            const msg = `🃏 *POKER NIGHT DETAILS* 🃏\n\n🏆 *${game.title}*\n📅 *Date:* ${fmtDateTime(game.date, game.time)}\n📍 *Venue:* ${game.venue}\n💰 *Buy-in:* ${game.initialBuyin} Banks\n\n👉 *RSVP & Join Table:* ${url}`;
+                            const success = await copyToClipboard(msg);
+                            if (success) {
+                              alert("📋 Table invitation link & details copied to clipboard! Share on WhatsApp or SMS.");
+                            } else {
+                              alert(`Copy this link to share: ${url}`);
+                            }
                           }}
                         >
                           Share Details 📋

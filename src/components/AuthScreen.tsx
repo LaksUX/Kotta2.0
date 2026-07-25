@@ -4,16 +4,18 @@
  */
 
 import { useState, FormEvent } from "react";
-import { ShieldCheck, Loader2 } from "lucide-react";
+import { ShieldCheck, Loader2, Sparkles, Calendar, MapPin, Coins, Users } from "lucide-react";
 import { AppState, Session } from "../types";
-import { hashPin, loadAppState, saveAppState, saveSession } from "../lib/storage";
+import { hashPin, loadAppState, saveAppState, saveSession, fmtDateTime } from "../lib/storage";
 import HoysalaLogo from "./HoysalaLogo";
 
 interface AuthScreenProps {
   onAuth: (state: AppState, session: Session) => void;
+  pendingJoinGameId?: string | null;
+  appState?: AppState;
 }
 
-export default function AuthScreen({ onAuth }: AuthScreenProps) {
+export default function AuthScreen({ onAuth, pendingJoinGameId, appState }: AuthScreenProps) {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -21,6 +23,11 @@ export default function AuthScreen({ onAuth }: AuthScreenProps) {
   const [pin2, setPin2] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+
+  const pendingGame = pendingJoinGameId && appState?.games ? appState.games[pendingJoinGameId] : null;
+  const confirmedPlayersCount = pendingGame && appState?.invites 
+    ? Object.values(appState.invites).filter(i => i.gameId === pendingGame.id && i.rsvp === "yes").length + 1 // +1 for host
+    : 1;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -95,6 +102,52 @@ export default function AuthScreen({ onAuth }: AuthScreenProps) {
               Your Poker companion.
             </div>
           </div>
+
+          {/* Shared Table Invitation Banner */}
+          {pendingGame ? (
+            <div className="pn-card mb-6 border border-[var(--gold)]/30 bg-[var(--gold)]/5 shadow-2xl relative overflow-hidden animate-fadeIn">
+              <div className="absolute -right-6 -top-6 w-24 h-24 bg-[var(--gold)]/10 rounded-full blur-xl pointer-events-none" />
+              <div className="flex items-center gap-2 text-[var(--gold)] font-mono text-[11px] uppercase tracking-wider mb-2 font-semibold">
+                <Sparkles size={14} className="animate-spin" style={{ animationDuration: '4s' }} /> Table Invitation Details
+              </div>
+              
+              <h3 className="font-serif text-xl font-bold text-[var(--cream)] mb-1">
+                {pendingGame.title}
+              </h3>
+              <p className="text-xs text-[var(--muted)] mb-3">
+                👑 Hosted by <span className="text-[var(--cream)] font-medium">{pendingGame.hostName}</span>
+              </p>
+
+              <div className="grid grid-cols-2 gap-2 text-xs py-2 px-3 bg-black/30 rounded-xl border border-white/5 mb-3">
+                <div className="flex items-center gap-1.5 text-white/80">
+                  <Calendar size={13} className="text-[var(--gold)]" />
+                  <span className="truncate">{fmtDateTime(pendingGame.date, pendingGame.time)}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-white/80">
+                  <MapPin size={13} className="text-[var(--gold)]" />
+                  <span className="truncate">{pendingGame.venue || "Private Table"}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-white/80">
+                  <Coins size={13} className="text-[var(--gold)]" />
+                  <span>Buy-in: <strong className="text-[var(--gold)] font-mono">{pendingGame.initialBuyin} Banks</strong></span>
+                </div>
+                <div className="flex items-center gap-1.5 text-white/80">
+                  <Users size={13} className="text-[var(--gold)]" />
+                  <span>{confirmedPlayersCount} Confirmed</span>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-[var(--gold)]/90 font-mono text-center bg-[var(--gold)]/10 py-1.5 px-2 rounded-lg border border-[var(--gold)]/20">
+                👉 Enter your details below to enter this table!
+              </p>
+            </div>
+          ) : pendingJoinGameId ? (
+            <div className="pn-card mb-6 border border-white/10 bg-white/5 text-center py-4">
+              <div className="flex items-center justify-center gap-2 text-xs text-[var(--gold)] font-mono">
+                <Loader2 size={14} className="animate-spin" /> Fetching Shared Table Info...
+              </div>
+            </div>
+          ) : null}
 
           <div className="pn-card">
             <div style={{ marginBottom: 20 }}>

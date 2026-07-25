@@ -482,35 +482,51 @@ interface AppNotification {
 function getNewNotifications(prev: AppState, next: AppState, userPhone: string): AppNotification[] {
   const list: AppNotification[] = [];
 
-  // 1. Check for newly approved or rejected buy-ins
+  // 1. Check for buy-ins (Player notifications for approval/rejection & Host notifications for new buy-in requests)
   if (prev.buyins && next.buyins) {
     Object.values(next.buyins).forEach((nextBuyin) => {
-      if (nextBuyin.phone !== userPhone) return;
       const prevBuyin = prev.buyins[nextBuyin.id];
-      if (!prevBuyin) {
-        if (nextBuyin.status === "approved") {
-          const game = next.games[nextBuyin.gameId];
-          list.push({
-            id: `buyin_${nextBuyin.id}_approved`,
-            message: `Your buy-in of ${nextBuyin.amount} Banks for "${game?.title || "Game"}" has been approved!`,
-            type: "buyin_approved",
-            timestamp: Date.now()
-          });
+      const game = next.games[nextBuyin.gameId];
+
+      // A. Player receiving approval/rejection
+      if (nextBuyin.phone === userPhone) {
+        if (!prevBuyin) {
+          if (nextBuyin.status === "approved") {
+            list.push({
+              id: `buyin_${nextBuyin.id}_approved`,
+              message: `🎉 Your buy-in of ${nextBuyin.amount} Banks for "${game?.title || "Table"}" has been approved!`,
+              type: "buyin_approved",
+              timestamp: Date.now()
+            });
+          }
+        } else if (prevBuyin.status === "pending" && nextBuyin.status !== "pending") {
+          if (nextBuyin.status === "approved") {
+            list.push({
+              id: `buyin_${nextBuyin.id}_approved`,
+              message: `🎉 Your buy-in of ${nextBuyin.amount} Banks for "${game?.title || "Table"}" was APPROVED!`,
+              type: "buyin_approved",
+              timestamp: Date.now()
+            });
+          } else if (nextBuyin.status === "rejected") {
+            list.push({
+              id: `buyin_${nextBuyin.id}_rejected`,
+              message: `⚠️ Your buy-in of ${nextBuyin.amount} Banks for "${game?.title || "Table"}" was rejected.`,
+              type: "buyin_rejected",
+              timestamp: Date.now()
+            });
+          }
         }
-      } else if (prevBuyin.status === "pending" && nextBuyin.status !== "pending") {
-        const game = next.games[nextBuyin.gameId];
-        if (nextBuyin.status === "approved") {
+      }
+
+      // B. Host receiving buy-in request from a player
+      if (game && game.hostPhone === userPhone && nextBuyin.phone !== userPhone) {
+        if (!prevBuyin && nextBuyin.status === "pending") {
+          const player = next.users[nextBuyin.phone];
+          const playerName = player?.name || nextBuyin.phone;
           list.push({
-            id: `buyin_${nextBuyin.id}_approved`,
-            message: `🎉 Your buy-in of ${nextBuyin.amount} Banks for "${game?.title || "Game"}" has been APPROVED!`,
-            type: "buyin_approved",
-            timestamp: Date.now()
-          });
-        } else if (nextBuyin.status === "rejected") {
-          list.push({
-            id: `buyin_${nextBuyin.id}_rejected`,
-            message: `⚠️ Your buy-in of ${nextBuyin.amount} Banks for "${game?.title || "Game"}" was rejected.`,
-            type: "buyin_rejected",
+            id: `host_buyin_req_${nextBuyin.id}`,
+            message: `💰 ${playerName} requested a buy-in of ${nextBuyin.amount} Banks for "${game.title}".`,
+            type: "invite",
             timestamp: Date.now()
           });
         }
@@ -518,18 +534,20 @@ function getNewNotifications(prev: AppState, next: AppState, userPhone: string):
     });
   }
 
-  // 2. Check for new invites or additions
+  // 2. Check for invites & RSVPs (Player receiving invites & Host receiving RSVP updates)
   if (prev.invites && next.invites) {
     Object.values(next.invites).forEach((nextInvite) => {
-      if (nextInvite.phone !== userPhone) return;
       const prevInvite = prev.invites[nextInvite.id];
-      if (!prevInvite) {
-        const game = next.games[nextInvite.gameId];
-        if (game && game.status !== "closed") {
+      const game = next.games[nextInvite.gameId];
+      if (!game || game.status === "closed") return;
+
+      // A. Player getting invited or added
+      if (nextInvite.phone === userPhone) {
+        if (!prevInvite) {
           if (nextInvite.rsvp === "yes") {
             list.push({
               id: `invite_${nextInvite.id}`,
-              message: `🃏 You have been added directly to the active game "${game.title}" by host ${game.hostName}!`,
+              message: `🃏 You were added to table "${game.title}" by ${game.hostName}!`,
               type: "invite",
               timestamp: Date.now()
             });
@@ -537,6 +555,39 @@ function getNewNotifications(prev: AppState, next: AppState, userPhone: string):
             list.push({
               id: `invite_${nextInvite.id}`,
               message: `🃏 You're invited to play in "${game.title}" by ${game.hostName}!`,
+              type: "invite",
+              timestamp: Date.now()
+            });
+          }
+        }
+      }
+
+      // B. Host getting player RSVP/Join updates
+      if (game.hostPhone === userPhone && nextInvite.phone !== userPhone) {
+        const player = next.users[nextInvite.phone];
+        const playerName = player?.name || nextInvite.phone;
+
+        if (!prevInvite) {
+          if (nextInvite.rsvp === "yes") {
+            list.push({
+              id: `host_rsvp_${nextInvite.id}_join`,
+              message: `🎉 ${playerName} joined your table "${game.title}"!`,
+              type: "invite",
+              timestamp: Date.now()
+            });
+          }
+        } else if (prevInvite.rsvp !== nextInvite.rsvp) {
+          if (nextInvite.rsvp === "yes") {
+            list.push({
+              id: `host_rsvp_${nextInvite.id}_yes`,
+              message: `✅ ${playerName} RSVP'd Going to "${game.title}"!`,
+              type: "invite",
+              timestamp: Date.now()
+            });
+          } else if (nextInvite.rsvp === "no") {
+            list.push({
+              id: `host_rsvp_${nextInvite.id}_no`,
+              message: `❌ ${playerName} marked Not Going for "${game.title}".`,
               type: "invite",
               timestamp: Date.now()
             });
@@ -578,12 +629,28 @@ export default function App() {
   const [pendingJoinGameId, setPendingJoinGameId] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
 
-  // Read URL query parameters on load
+  // Read URL query parameters on load & sessionStorage
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const joinId = params.get("joinGame");
+    let joinId: string | null = null;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      joinId = params.get("joinGame");
+      if (!joinId && window.location.hash) {
+        const hashParams = new URLSearchParams(window.location.hash.replace(/^#\/?/, "?"));
+        joinId = hashParams.get("joinGame");
+      }
+      if (!joinId) {
+        joinId = sessionStorage.getItem("pn_pending_join");
+      }
+    } catch (e) {
+      console.warn("Error reading URL search params", e);
+    }
+
     if (joinId) {
       setPendingJoinGameId(joinId);
+      try {
+        sessionStorage.setItem("pn_pending_join", joinId);
+      } catch {}
     }
   }, []);
 
@@ -610,13 +677,29 @@ export default function App() {
         };
         handleUpdateAppState({ ...appState, invites: nextInvites });
       }
+
       setSelectedGame(gameToJoin);
       setPendingJoinGameId(null);
+      try {
+        sessionStorage.removeItem("pn_pending_join");
+      } catch {}
+
+      // Trigger notification for joining table
+      addAppNotifications([
+        {
+          id: `joined_table_${gameToJoin.id}_${Date.now()}`,
+          message: `🎉 Joined table "${gameToJoin.title}" hosted by ${gameToJoin.hostName}!`,
+          type: "invite",
+          timestamp: Date.now()
+        }
+      ]);
 
       // Clean up search query param cleanly
-      const url = new URL(window.location.href);
-      url.searchParams.delete("joinGame");
-      window.history.replaceState({}, document.title, url.pathname);
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete("joinGame");
+        window.history.replaceState({}, document.title, url.pathname);
+      } catch {}
     }
   }, [session, pendingJoinGameId, appState.games]);
 
@@ -836,6 +919,8 @@ export default function App() {
       {!currentUser ? (
         <AuthScreen 
           onAuth={handleAuthSuccess} 
+          pendingJoinGameId={pendingJoinGameId}
+          appState={appState}
         />
       ) : (
         <div className="min-h-screen w-full bg-[#06080B] flex justify-center items-stretch">
