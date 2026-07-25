@@ -24,7 +24,9 @@ export default function AuthScreen({ onAuth, pendingJoinGameId, appState }: Auth
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const pendingGame = pendingJoinGameId && appState?.games ? appState.games[pendingJoinGameId] : null;
+  const pendingGame = pendingJoinGameId && appState?.games 
+    ? (appState.games[pendingJoinGameId] || (Object.keys(appState.games).length === 1 ? Object.values(appState.games)[0] : null))
+    : null;
   const confirmedPlayersCount = pendingGame && appState?.invites 
     ? Object.values(appState.invites).filter(i => i.gameId === pendingGame.id && i.rsvp === "yes").length + 1 // +1 for host
     : 1;
@@ -140,6 +142,12 @@ export default function AuthScreen({ onAuth, pendingJoinGameId, appState }: Auth
               <p className="text-[11px] text-[var(--gold)]/90 font-mono text-center bg-[var(--gold)]/10 py-1.5 px-2 rounded-lg border border-[var(--gold)]/20">
                 👉 Enter your details below to enter this table!
               </p>
+            </div>
+          ) : pendingJoinGameId ? (
+            <div className="pn-card mb-6 border border-[var(--gold)]/30 bg-[var(--gold)]/5 shadow-2xl text-center py-4 animate-fadeIn">
+              <div className="flex items-center justify-center gap-2 text-xs text-[var(--gold)] font-mono">
+                <Loader2 size={14} className="animate-spin" /> Loading Table Invitation Details...
+              </div>
             </div>
           ) : null}
 

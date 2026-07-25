@@ -659,17 +659,9 @@ export default function App() {
     if (loading) return;
 
     if (pendingJoinGameId) {
-      const gameToJoin = appState.games[pendingJoinGameId];
+      const gameToJoin = appState.games[pendingJoinGameId] || (Object.keys(appState.games).length === 1 ? Object.values(appState.games)[0] : null);
 
       if (!gameToJoin) {
-        // Game no longer exists or was cleared
-        setPendingJoinGameId(null);
-        try {
-          sessionStorage.removeItem("pn_pending_join");
-          const url = new URL(window.location.href);
-          url.searchParams.delete("joinGame");
-          window.history.replaceState({}, document.title, url.pathname);
-        } catch {}
         return;
       }
 
