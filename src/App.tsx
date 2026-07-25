@@ -7,7 +7,7 @@ import { useState, useEffect } from "react";
 import { AppState, Session, Game, User, Invite, Buyin } from "./types";
 import {
   loadAppState, saveAppState, loadSession, saveSession,
-  clearSessionStorage, hashPin
+  clearSessionStorage, hashPin, playChipClinkSound
 } from "./lib/storage";
 import { Plus, Users, CheckCircle, AlertTriangle, Sparkles, X } from "lucide-react";
 import AuthScreen from "./components/AuthScreen";
@@ -729,26 +729,31 @@ export default function App() {
     }
   }, [session]);
 
-  // Unified notifications adder that triggers native browser notifications for invites
+  // Unified notifications adder that triggers sound and native browser notifications for invites
   const addAppNotifications = (newNotifs: AppNotification[]) => {
     if (newNotifs.length === 0) return;
     setNotifications((current) => {
       const prevIds = new Set(current.map((c) => c.id));
       const filtered = newNotifs.filter((n) => !prevIds.has(n.id));
 
-      if (filtered.length > 0 && typeof window !== "undefined" && "Notification" in window) {
-        if (window.Notification.permission === "granted") {
-          filtered.forEach((notif) => {
-            if (notif.type === "invite") {
-              try {
-                new window.Notification("♣️ Kotta Invitation", {
-                  body: notif.message
-                });
-              } catch (e) {
-                console.error("Browser notification failed", e);
+      if (filtered.length > 0) {
+        // Play chip clink sound effect
+        playChipClinkSound();
+
+        if (typeof window !== "undefined" && "Notification" in window) {
+          if (window.Notification.permission === "granted") {
+            filtered.forEach((notif) => {
+              if (notif.type === "invite") {
+                try {
+                  new window.Notification("♣️ Kotta Invitation", {
+                    body: notif.message
+                  });
+                } catch (e) {
+                  console.error("Browser notification failed", e);
+                }
               }
-            }
-          });
+            });
+          }
         }
       }
 

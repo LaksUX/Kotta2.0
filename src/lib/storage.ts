@@ -172,6 +172,7 @@ export function fmtDateTime(date: string, time?: string): string {
   }
 }
 
+
 export async function copyToClipboard(text: string): Promise<boolean> {
   try {
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -196,6 +197,52 @@ export async function copyToClipboard(text: string): Promise<boolean> {
   } catch (err) {
     console.error("Fallback copy failed", err);
     return false;
+  }
+}
+
+/**
+ * Plays a subtle, realistic poker chip clink sound effect using the browser Web Audio API
+ */
+export function playChipClinkSound() {
+  try {
+    if (typeof window === "undefined") return;
+    const AudioCtxClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof window.AudioContext }).webkitAudioContext;
+    if (!AudioCtxClass) return;
+    const ctx = new AudioCtxClass();
+
+    const now = ctx.currentTime;
+
+    const playTone = (freq: number, startTime: number, duration: number, vol: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(freq, startTime);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.75, startTime + duration);
+
+      gain.gain.setValueAtTime(vol, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(startTime);
+      osc.stop(startTime + duration);
+    };
+
+    // Primary ceramic/clay chip impact frequencies
+    playTone(3100, now, 0.07, 0.12);
+    playTone(4500, now, 0.04, 0.08);
+
+    // Secondary slight bounce / clink delay
+    playTone(3400, now + 0.035, 0.06, 0.09);
+    playTone(5200, now + 0.035, 0.03, 0.06);
+
+    setTimeout(() => {
+      ctx.close().catch(() => {});
+    }, 400);
+  } catch (e) {
+    console.debug("Chip clink sound skipped:", e);
   }
 }
 
