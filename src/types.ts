@@ -1,12 +1,8 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 export interface User {
   phone: string;
   name: string;
   pinHash: string;
+  avatarColor?: string;
 }
 
 export type GameStatus = "draft" | "active" | "closed";
@@ -21,20 +17,23 @@ export interface Game {
   venue: string;
   hostPhone: string;
   hostName: string;
-  initialBuyin: number; // in Banks
-  rake: number;         // in Banks
+  initialBuyin: number; // in Banks (1 Bank = $1 / standard chip unit)
+  rake: number;         // in Banks per game
   maxPlayers?: number;
   ratio?: "1:1" | "1:2";
   status: GameStatus;
   createdAt: number;
   closedAt?: number;
-  liveCashouts?: Record<string, number>;
-  results?: Record<string, {
-    cashout: number;
-    buyin: number;
-    net: number;
-    totalBuyins: number;
-  }>;
+  liveCashouts?: Record<string, number>; // phone -> cashout Banks
+  results?: Record<
+    string,
+    {
+      cashout: number;
+      buyin: number;
+      net: number;
+      totalBuyins: number;
+    }
+  >;
   rakeInfo?: {
     totalBuyins: number;
     actualCashoutSum: number;
@@ -61,13 +60,42 @@ export interface Buyin {
   createdAt: number;
 }
 
+export interface SettlementDebt {
+  fromPhone: string;
+  fromName: string;
+  toPhone: string;
+  toName: string;
+  amount: number;
+}
+
+export interface HandNote {
+  id: string;
+  gameId?: string;
+  date: string;
+  title: string;
+  heroHand: string;
+  board?: string;
+  position: string;
+  stakes: string;
+  potSize: number;
+  result: "win" | "loss" | "chop";
+  amountWonLost: number;
+  notes: string;
+  createdAt: number;
+}
+
+export interface BankrollGoal {
+  targetAmount: number;
+  targetStakes: string;
+}
+
 export interface AppState {
+  currentUser: User | null;
   users: Record<string, User>;
   games: Record<string, Game>;
   invites: Record<string, Invite>;
   buyins: Record<string, Buyin>;
-}
-
-export interface Session {
-  phone: string;
+  handNotes: Record<string, HandNote>;
+  bankrollGoal: BankrollGoal;
+  activeTab: "games" | "ledger" | "analytics" | "hands" | "players";
 }

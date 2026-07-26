@@ -1,2 +1,2 @@
-export const BUILD_NUMBER = "2.5.1";
-export const BUILD_TAG = "Minimal Player & Host Engine";
+export const BUILD_NUMBER = "3.0.0";
+export const BUILD_TAG = "Workouts Fitness Tracker";

@@ -1,6 +1,6 @@
 {
-  "name": "Kotta Poker Ledger",
-  "description": "A visually immersive ledger app for home poker nights to track buy-ins, approve re-buys, and pairwise simplify debts in Banks.",
+  "name": "Host Poker Ledger App",
+  "description": "The latest host poker ledger and settlement engine inspired by sleek dark bento card UI with WhatsApp invite links, live table buy-ins, re-buys, host rake, variance verification, and pairwise debt simplification.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
