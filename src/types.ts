@@ -89,6 +89,18 @@ export interface BankrollGoal {
   targetStakes: string;
 }
 
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  timestamp: number;
+  read: boolean;
+  type: "buyin_request" | "buyin_approved" | "buyin_rejected" | "game_closed" | "invite" | "achievement";
+  gameId?: string;
+  buyinId?: string;
+  targetPhone?: string; // intended recipient, or 'host'
+}
+
 export interface AppState {
   currentUser: User | null;
   users: Record<string, User>;
@@ -97,5 +109,6 @@ export interface AppState {
   buyins: Record<string, Buyin>;
   handNotes: Record<string, HandNote>;
   bankrollGoal: BankrollGoal;
+  notifications: AppNotification[];
   activeTab: "games" | "ledger" | "players";
 }

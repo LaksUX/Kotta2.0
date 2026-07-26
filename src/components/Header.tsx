@@ -1,21 +1,27 @@
 import React from "react";
 import { AppState, User, Game } from "../types";
-import { Users, Plus, Shield, Sparkles, LogIn, Scale } from "lucide-react";
+import { Plus, LogIn, Bell } from "lucide-react";
 import { initials } from "../lib/storage";
 
 interface HeaderProps {
   state: AppState;
   onOpenCreateGame: () => void;
   onOpenAuth: () => void;
+  onOpenNotifications: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   state,
   onOpenCreateGame,
   onOpenAuth,
+  onOpenNotifications,
 }) => {
   const activeGamesCount = (Object.values(state.games) as Game[]).filter(
     (g) => g.status === "active"
+  ).length;
+
+  const unreadNotificationsCount = (state.notifications || []).filter(
+    (n) => !n.read
   ).length;
 
   return (
@@ -44,7 +50,7 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Action Buttons & User Profile */}
+        {/* Action Buttons, Notifications & User Profile */}
         <div className="flex items-center gap-2">
           {/* Host New Game Button */}
           <button
@@ -56,12 +62,27 @@ export const Header: React.FC<HeaderProps> = ({
             <span>Host</span>
           </button>
 
+          {/* Notifications Bell */}
+          <button
+            type="button"
+            onClick={onOpenNotifications}
+            className="relative p-2 bg-[#181B24] border border-white/10 rounded-xl text-[#8E95A5] hover:text-white hover:border-amber-400/40 transition-colors"
+            title="Notifications"
+          >
+            <Bell size={16} />
+            {unreadNotificationsCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white font-black text-[9px] flex items-center justify-center font-mono border border-black animate-pulse">
+                {unreadNotificationsCount}
+              </span>
+            )}
+          </button>
+
           {/* User Profile Switcher */}
           <button
             type="button"
             onClick={onOpenAuth}
             className="flex items-center gap-1.5 p-1 bg-[#181B24] border border-white/10 rounded-xl hover:border-amber-400/40 transition-colors"
-            title="Switch User / Account"
+            title="Account & Authentication"
           >
             {state.currentUser ? (
               <div

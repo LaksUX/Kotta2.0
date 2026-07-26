@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { AppState, Game, Buyin, User } from "./types";
+import { AppState, Game, Buyin, User, AppNotification } from "./types";
 import { getInitialAppState, saveAppState } from "./lib/storage";
 
 import { Header } from "./components/Header";
@@ -7,6 +7,7 @@ import { GamesDashboard } from "./components/GamesDashboard";
 import { LiveGameModal } from "./components/LiveGameModal";
 import { CreateGameModal } from "./components/CreateGameModal";
 import { AuthModal } from "./components/AuthModal";
+import { NotificationsModal } from "./components/NotificationsModal";
 
 export default function App() {
   const [state, setState] = useState<AppState>(() => getInitialAppState());
@@ -15,6 +16,7 @@ export default function App() {
   const [activeGameModal, setActiveGameModal] = useState<Game | null>(null);
   const [showCreateGame, setShowCreateGame] = useState<boolean>(false);
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+  const [showNotificationsModal, setShowNotificationsModal] = useState<boolean>(false);
 
   // Sync state to LocalStorage
   useEffect(() => {
@@ -39,6 +41,23 @@ export default function App() {
     }));
   };
 
+  // Handler: Register new user
+  const handleRegisterUser = (newUser: User) => {
+    setState((prev) => ({
+      ...prev,
+      users: { ...prev.users, [newUser.phone]: newUser },
+    }));
+  };
+
+  // Handler: Logout user
+  const handleLogoutUser = () => {
+    setState((prev) => ({
+      ...prev,
+      currentUser: null,
+    }));
+    setShowAuthModal(false);
+  };
+
   // Handler: Create & host game
   const handleCreateGame = (newGame: Game) => {
     const initialBuyinObj: Buyin = {
@@ -50,10 +69,21 @@ export default function App() {
       createdAt: Date.now(),
     };
 
+    const hostNotif: AppNotification = {
+      id: `notif_${Date.now()}`,
+      title: "♠ Table Created",
+      message: `You successfully hosted ${newGame.title} at ${newGame.venue}.`,
+      timestamp: Date.now(),
+      read: false,
+      type: "invite",
+      gameId: newGame.id,
+    };
+
     setState((prev) => ({
       ...prev,
       games: { ...prev.games, [newGame.id]: newGame },
       buyins: { ...prev.buyins, [initialBuyinObj.id]: initialBuyinObj },
+      notifications: [hostNotif, ...(prev.notifications || [])],
     }));
 
     setActiveGameModal(newGame);
@@ -66,9 +96,29 @@ export default function App() {
       if (!target) return prev;
 
       const updatedBuyin: Buyin = { ...target, status: "approved" };
+      const player = prev.users[target.phone];
+      const playerName = player ? player.name : `Player ${target.phone.slice(-4)}`;
+
+      const approvedNotif: AppNotification = {
+        id: `notif_${Date.now()}`,
+        title: "Buy-in Approved",
+        message: `${playerName}'s buy-in of ${target.amount} Bank (${target.amount * 10}k chips) was approved.`,
+        timestamp: Date.now(),
+        read: false,
+        type: "buyin_approved",
+        gameId: target.gameId,
+        buyinId,
+      };
+
+      // Mark request notification read
+      const updatedNotifs = (prev.notifications || []).map((n) =>
+        n.buyinId === buyinId ? { ...n, read: true } : n
+      );
+
       return {
         ...prev,
         buyins: { ...prev.buyins, [buyinId]: updatedBuyin },
+        notifications: [approvedNotif, ...updatedNotifs],
       };
     });
   };
@@ -80,9 +130,26 @@ export default function App() {
       if (!target) return prev;
 
       const updatedBuyin: Buyin = { ...target, status: "rejected" };
+
+      const rejectedNotif: AppNotification = {
+        id: `notif_${Date.now()}`,
+        title: "Buy-in Rejected",
+        message: `Buy-in request for ${target.amount} Bank was rejected by host.`,
+        timestamp: Date.now(),
+        read: false,
+        type: "buyin_rejected",
+        gameId: target.gameId,
+        buyinId,
+      };
+
+      const updatedNotifs = (prev.notifications || []).map((n) =>
+        n.buyinId === buyinId ? { ...n, read: true } : n
+      );
+
       return {
         ...prev,
         buyins: { ...prev.buyins, [buyinId]: updatedBuyin },
+        notifications: [rejectedNotif, ...updatedNotifs],
       };
     });
   };
@@ -100,9 +167,23 @@ export default function App() {
       createdAt: Date.now(),
     };
 
+    const game = state.games[gameId];
+    const buyinNotif: AppNotification = {
+      id: `notif_${Date.now()}`,
+      title: "Buy-in Approval Request",
+      message: `${state.currentUser.name} requested ${amount} Bank (${amount * 10}k chips) buy-in for ${game?.title || "table"}.`,
+      timestamp: Date.now(),
+      read: false,
+      type: "buyin_request",
+      gameId,
+      buyinId: newBuyin.id,
+      targetPhone: game?.hostPhone,
+    };
+
     setState((prev) => ({
       ...prev,
       buyins: { ...prev.buyins, [newBuyin.id]: newBuyin },
+      notifications: [buyinNotif, ...(prev.notifications || [])],
     }));
   };
 
@@ -187,9 +268,25 @@ export default function App() {
         },
       };
 
+      const myResult = prev.currentUser?.phone ? results[prev.currentUser.phone] : null;
+      const gameClosedNotif: AppNotification = {
+        id: `notif_${Date.now()}`,
+        title: "🏆 Game Finalized & Closed",
+        message: `${game.title} has ended. Total Pool: ${totalBuyinSum} Banks.${
+          myResult
+            ? ` Your Net: ${myResult.net >= 0 ? `+${myResult.net}` : myResult.net} Banks.`
+            : ""
+        }`,
+        timestamp: Date.now(),
+        read: false,
+        type: "game_closed",
+        gameId,
+      };
+
       return {
         ...prev,
         games: { ...prev.games, [gameId]: closedGame },
+        notifications: [gameClosedNotif, ...(prev.notifications || [])],
       };
     });
 
@@ -211,6 +308,21 @@ export default function App() {
     }));
   };
 
+  // Notification actions
+  const handleMarkAllNotificationsRead = () => {
+    setState((prev) => ({
+      ...prev,
+      notifications: (prev.notifications || []).map((n) => ({ ...n, read: true })),
+    }));
+  };
+
+  const handleClearAllNotifications = () => {
+    setState((prev) => ({
+      ...prev,
+      notifications: [],
+    }));
+  };
+
   return (
     <div className="min-h-screen bg-[#07090D] text-white font-sans antialiased selection:bg-amber-400 selection:text-black">
       <div className="max-w-md mx-auto min-h-screen bg-[#0B0D11] relative flex flex-col border-x border-white/[0.06] shadow-2xl">
@@ -219,6 +331,7 @@ export default function App() {
           state={state}
           onOpenCreateGame={() => setShowCreateGame(true)}
           onOpenAuth={() => setShowAuthModal(true)}
+          onOpenNotifications={() => setShowNotificationsModal(true)}
         />
 
         {/* Combined Unified View (Live Tables + Fitness Log & Graphs) */}
@@ -254,12 +367,26 @@ export default function App() {
           />
         )}
 
-        {/* Auth / Switch User Modal */}
+        {/* Auth / Account Management Modal */}
         {showAuthModal && (
           <AuthModal
             state={state}
             onClose={() => setShowAuthModal(false)}
             onSelectUser={handleSelectUser}
+            onRegisterUser={handleRegisterUser}
+            onLogout={handleLogoutUser}
+          />
+        )}
+
+        {/* Notifications Drawer Modal */}
+        {showNotificationsModal && (
+          <NotificationsModal
+            state={state}
+            onClose={() => setShowNotificationsModal(false)}
+            onMarkAllRead={handleMarkAllNotificationsRead}
+            onClearAll={handleClearAllNotifications}
+            onApproveBuyin={handleApproveBuyin}
+            onRejectBuyin={handleRejectBuyin}
           />
         )}
       </div>
