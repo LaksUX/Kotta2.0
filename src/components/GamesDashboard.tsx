@@ -162,16 +162,6 @@ export const GamesDashboard: React.FC<GamesDashboardProps> = ({
             </span>
           </h2>
         </div>
-
-        {/* Host Game Primary Action */}
-        <button
-          type="button"
-          onClick={onOpenCreateGame}
-          className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-300 text-black font-extrabold text-xs flex items-center gap-1.5 shadow-lg shadow-amber-400/20 active:scale-95 transition-transform"
-        >
-          <Spade size={16} fill="black" />
-          <span>Host</span>
-        </button>
       </div>
 
       {/* Fitness & Live Summary Metrics Banner */}
@@ -217,15 +207,11 @@ export const GamesDashboard: React.FC<GamesDashboardProps> = ({
         </div>
 
         {activeGames.length === 0 ? (
-          <div className="bg-[#181B24] border border-dashed border-white/20 rounded-2xl p-6 text-center space-y-3">
+          <div className="bg-[#181B24] border border-dashed border-white/20 rounded-2xl p-6 text-center space-y-2">
             <p className="text-xs text-[#8E95A5]">No live poker tables running currently.</p>
-            <button
-              type="button"
-              onClick={onOpenCreateGame}
-              className="px-4 py-2.5 bg-gradient-to-r from-amber-400 to-amber-300 text-black font-extrabold text-xs rounded-xl shadow-md active:scale-95 transition-all"
-            >
-              Host Live Game
-            </button>
+            <p className="text-xs text-amber-300 font-semibold">
+              Tap <span className="font-extrabold underline">Host</span> at the top header to start a game.
+            </p>
           </div>
         ) : (
           activeGames.map((game) => {
