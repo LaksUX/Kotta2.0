@@ -100,22 +100,20 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
         {/* LEFT COLUMN: Games List & Controls */}
         <div className={`flex flex-col gap-6 ${activeTab === "games" ? "flex" : "hidden"}`}>
 
-          {/* Filter Pills */}
-          <div className="flex items-center justify-between">
-            <div className="flex gap-2">
-              <button
-                className={`pn-tag-pill ${gamesFilter === "live" ? "active" : ""}`}
-                onClick={() => setGamesFilter("live")}
-              >
-                Live Game ({liveGames.length})
-              </button>
-              <button
-                className={`pn-tag-pill ${gamesFilter === "past" ? "active" : ""}`}
-                onClick={() => setGamesFilter("past")}
-              >
-                Past Games ({pastGames.length})
-              </button>
-            </div>
+          {/* Filter Segmented Control */}
+          <div className="android-segmented-container">
+            <button
+              className={`android-segmented-button ${gamesFilter === "live" ? "active" : ""}`}
+              onClick={() => setGamesFilter("live")}
+            >
+              Live Games ({liveGames.length})
+            </button>
+            <button
+              className={`android-segmented-button ${gamesFilter === "past" ? "active" : ""}`}
+              onClick={() => setGamesFilter("past")}
+            >
+              Past Games ({pastGames.length})
+            </button>
           </div>
 
           {/* Games List */}
@@ -362,20 +360,18 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
             </div>
           </div>
 
-          {/* Ledger Selector Tabs */}
+          {/* Ledger Selector Segmented Control */}
           {hostLedger.count > 0 && (
-            <div className="flex gap-2">
+            <div className="android-segmented-container">
               <button
-                className={`pn-tag-pill ${ledgerSubTab === "player" ? "active" : ""}`}
+                className={`android-segmented-button ${ledgerSubTab === "player" ? "active" : ""}`}
                 onClick={() => setLedgerSubTab("player")}
-                style={{ flex: 1, justifyContent: "center" }}
               >
                 My Player Stats
               </button>
               <button
-                className={`pn-tag-pill ${ledgerSubTab === "host" ? "active" : ""}`}
+                className={`android-segmented-button ${ledgerSubTab === "host" ? "active" : ""}`}
                 onClick={() => setLedgerSubTab("host")}
-                style={{ flex: 1, justifyContent: "center" }}
               >
                 Host Rake ({hostLedger.count})
               </button>

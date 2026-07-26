@@ -441,50 +441,22 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
       <div className="pn-body" style={{ overflowY: "auto" }}>
         {/* Tab Headers - Only for active games */}
         {game.status === "active" && (
-          <div style={{ display: "flex", borderBottom: "1px solid var(--hairline)", background: "var(--surface)", marginBottom: 16, borderRadius: 8, overflow: "hidden" }}>
+          <div className="android-segmented-container mb-5">
             <button
               type="button"
-              style={{
-                flex: 1,
-                borderRadius: 0,
-                background: gameTab === "setup" ? "rgba(214, 175, 55, 0.08)" : "transparent",
-                color: gameTab === "setup" ? "var(--gold)" : "var(--muted)",
-                borderBottom: gameTab === "setup" ? "2px solid var(--gold)" : "none",
-                fontSize: 13,
-                padding: "12px 8px",
-                fontWeight: 600,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 6,
-                border: "none",
-                cursor: "pointer"
-              }}
+              className={`android-segmented-button ${gameTab === "setup" ? "active" : ""}`}
               onClick={() => { setGameTab("setup"); setIsClosing(false); }}
             >
-              <Users size={15} /> Setup &amp; Players
+              <Users size={17} strokeWidth={gameTab === "setup" ? 2.5 : 2} color={gameTab === "setup" ? "#0A0D14" : "var(--gold-soft)"} />
+              <span>Setup &amp; Players</span>
             </button>
             <button
               type="button"
-              style={{
-                flex: 1,
-                borderRadius: 0,
-                background: gameTab === "live" ? "rgba(214, 175, 55, 0.08)" : "transparent",
-                color: gameTab === "live" ? "var(--gold)" : "var(--muted)",
-                borderBottom: gameTab === "live" ? "2px solid var(--gold)" : "none",
-                fontSize: 13,
-                padding: "12px 8px",
-                fontWeight: 600,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 6,
-                border: "none",
-                cursor: "pointer"
-              }}
+              className={`android-segmented-button ${gameTab === "live" ? "active" : ""}`}
               onClick={() => setGameTab("live")}
             >
-              <Coins size={15} /> Live
+              <Coins size={17} strokeWidth={gameTab === "live" ? 2.5 : 2} color={gameTab === "live" ? "#0A0D14" : "var(--gold-soft)"} />
+              <span>Live Game &amp; Settle</span>
             </button>
           </div>
         )}
@@ -1062,10 +1034,133 @@ export default function GameDetails({ game, currentUser, appState, onBack, onUpd
               </div>
             )}
 
+            {/* Quick Player Cashout & Exit Card */}
+            {myRsvp === "yes" && totalMyApprovedBuyin > 0 && (
+              <div
+                className="pn-card"
+                style={{
+                  marginBottom: 16,
+                  background: "linear-gradient(135deg, rgba(20, 27, 38, 0.95) 0%, rgba(10, 13, 20, 0.98) 100%)",
+                  border: "1px solid rgba(212, 175, 55, 0.35)",
+                  borderRadius: 16,
+                  padding: 16,
+                  boxShadow: "0 4px 16px rgba(0, 0, 0, 0.3)"
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <div>
+                    <span className="pn-label" style={{ margin: 0, color: "var(--gold-soft)", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
+                      🚪 Leaving Table? Enter Final Cashout
+                    </span>
+                    <p style={{ fontSize: 11, color: "#94A3B8", marginTop: 2 }}>
+                      Saves to host's table data &amp; your personal ledger
+                    </p>
+                  </div>
+                  <div
+                    className="pn-mono"
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: ((cashoutMap[currentUser.phone] ?? totalMyApprovedBuyin) - totalMyApprovedBuyin) > 0 ? "var(--success)" : ((cashoutMap[currentUser.phone] ?? totalMyApprovedBuyin) - totalMyApprovedBuyin) < 0 ? "var(--danger)" : "#CBD5E1"
+                    }}
+                  >
+                    Net: {round2((cashoutMap[currentUser.phone] ?? totalMyApprovedBuyin) - totalMyApprovedBuyin) > 0 ? `+${round2((cashoutMap[currentUser.phone] ?? totalMyApprovedBuyin) - totalMyApprovedBuyin)}` : round2((cashoutMap[currentUser.phone] ?? totalMyApprovedBuyin) - totalMyApprovedBuyin)} Banks
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10 }}>
+                  <input
+                    className="pn-input pn-mono"
+                    type="number"
+                    step="0.1"
+                    min={0}
+                    value={cashoutMap[currentUser.phone] !== undefined ? cashoutMap[currentUser.phone] : totalMyApprovedBuyin}
+                    onChange={(e) => {
+                      const val = e.target.value === "" ? 0 : parseFloat(e.target.value);
+                      const cleanVal = isNaN(val) ? 0 : Math.max(0, val);
+                      
+                      const nextMap = { ...cashoutMap, [currentUser.phone]: cleanVal };
+                      setCashoutMap(nextMap);
+
+                      const nextGames = { ...appState.games };
+                      const currentGame = nextGames[game.id];
+                      if (currentGame) {
+                        currentGame.liveCashouts = {
+                          ...(currentGame.liveCashouts || {}),
+                          [currentUser.phone]: cleanVal
+                        };
+                        onUpdateState({ ...appState, games: nextGames });
+                      }
+                    }}
+                    style={{ flex: 1, padding: "10px 14px", fontSize: 16, fontWeight: 700, textAlign: "center", background: "#0A0D14", border: "1px solid rgba(212,175,55,0.4)" }}
+                    placeholder="Cashout Banks"
+                  />
+                  <button
+                    className="pn-btn pn-btn-primary"
+                    style={{ height: 44, padding: "0 16px", fontSize: 13, gap: 6, display: "flex", alignItems: "center", minWidth: 120 }}
+                    onClick={() => {
+                      const myVal = cashoutMap[currentUser.phone] !== undefined ? cashoutMap[currentUser.phone] : totalMyApprovedBuyin;
+                      setToastMsg(`✅ Cashout of ${myVal} Banks saved to your ledger!`);
+                    }}
+                  >
+                    <Save size={16} /> Save Exit
+                  </button>
+                </div>
+
+                {/* Quick Presets for Player */}
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button
+                    type="button"
+                    className="pn-tag-pill"
+                    style={{ flex: 1, fontSize: 11, padding: "6px", textAlign: "center", margin: 0, background: "rgba(239, 68, 68, 0.15)", color: "#FCA5A5", border: "1px solid rgba(239, 68, 68, 0.3)" }}
+                    onClick={() => {
+                      const nextMap = { ...cashoutMap, [currentUser.phone]: 0 };
+                      setCashoutMap(nextMap);
+                      const nextGames = { ...appState.games };
+                      if (nextGames[game.id]) {
+                        nextGames[game.id].liveCashouts = { ...(nextGames[game.id].liveCashouts || {}), [currentUser.phone]: 0 };
+                        onUpdateState({ ...appState, games: nextGames });
+                      }
+                      setToastMsg("Recorded 0 Banks (Busted)");
+                    }}
+                  >
+                    0 (Busted)
+                  </button>
+
+                  <button
+                    type="button"
+                    className="pn-tag-pill"
+                    style={{ flex: 1, fontSize: 11, padding: "6px", textAlign: "center", margin: 0, background: "rgba(212, 175, 55, 0.15)", color: "var(--gold-soft)", border: "1px solid rgba(212, 175, 55, 0.3)" }}
+                    onClick={() => {
+                      const nextMap = { ...cashoutMap, [currentUser.phone]: totalMyApprovedBuyin };
+                      setCashoutMap(nextMap);
+                      const nextGames = { ...appState.games };
+                      if (nextGames[game.id]) {
+                        nextGames[game.id].liveCashouts = { ...(nextGames[game.id].liveCashouts || {}), [currentUser.phone]: totalMyApprovedBuyin };
+                        onUpdateState({ ...appState, games: nextGames });
+                      }
+                      setToastMsg(`Recorded ${totalMyApprovedBuyin} Banks (Break Even)`);
+                    }}
+                  >
+                    Break Even ({totalMyApprovedBuyin})
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Players and Buyins List */}
             <div className="pn-card" style={{ marginBottom: 16 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <span className="pn-label" style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Ledger ({players.length} players)</span>
+                {Math.abs(financials.variance) <= 0.01 ? (
+                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    Table Balanced ✅
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    Variance: {financials.variance > 0 ? `+${round2(financials.variance)}` : round2(financials.variance)}
+                  </span>
+                )}
               </div>
 
               {/* Overall Players Buying and Cashouts Summary */}

@@ -327,24 +327,93 @@ const GLOBAL_CSS = `
   }
 
   .pn-tag-pill {
-    padding: 6px 12px;
-    border-radius: 999px;
+    padding: 8px 16px;
+    border-radius: 9999px;
     font-size: 13px;
-    font-weight: 500;
-    border: 1px solid var(--hairline);
+    font-weight: 600;
+    border: 1px solid rgba(243, 237, 228, 0.15);
     background: var(--surface-raised);
-    color: var(--cream);
+    color: #E2E8F0;
     cursor: pointer;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
-    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .pn-tag-pill:active {
+    transform: scale(0.96);
   }
 
   .pn-tag-pill.active {
-    background: var(--gold);
-    color: var(--ink);
-    border-color: var(--gold);
+    background: linear-gradient(135deg, #F3D375 0%, #D4AF37 100%);
+    color: #0A0D14;
+    border-color: #F3D375;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
+  }
+
+  /* Android Material 3 Segmented Control Container */
+  .android-segmented-container {
+    display: flex;
+    background: rgba(15, 19, 28, 0.95);
+    border: 1px solid rgba(212, 175, 55, 0.25);
+    border-radius: 9999px;
+    padding: 4px;
+    gap: 4px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+    width: 100%;
+  }
+
+  .android-segmented-button {
+    flex: 1;
+    border-radius: 9999px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #94A3B8;
+    background: transparent;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .android-segmented-button:active {
+    transform: scale(0.96);
+  }
+
+  .android-segmented-button.active {
+    background: linear-gradient(135deg, #F3D375 0%, #D4AF37 100%);
+    color: #0A0D14;
+    font-weight: 700;
+    box-shadow: 0 2px 10px rgba(212, 175, 55, 0.35);
+  }
+
+  /* Android Settings List Tile Style */
+  .android-settings-tile {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 1px solid rgba(243, 237, 228, 0.08);
+    border-radius: 16px;
+    transition: all 0.15s ease;
+    cursor: pointer;
+  }
+
+  .android-settings-tile:active {
+    transform: scale(0.98);
+    background: var(--surface-raised);
   }
 
   .pn-fab {

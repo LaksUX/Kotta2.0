@@ -118,11 +118,15 @@ export function BottomNav({ active, go }: BottomNavProps) {
         position: "sticky",
         bottom: 0,
         display: "flex",
-        background: "rgba(13, 16, 21, 0.95)",
-        backdropFilter: "blur(6px)",
-        borderTop: "1px solid var(--hairline)",
-        paddingBottom: 6,
-        zIndex: 30
+        alignItems: "center",
+        justifyContent: "space-around",
+        background: "rgba(12, 15, 22, 0.96)",
+        backdropFilter: "blur(12px)",
+        borderTop: "1px solid rgba(243, 237, 228, 0.1)",
+        paddingTop: 8,
+        paddingBottom: 8,
+        zIndex: 30,
+        boxShadow: "0 -4px 20px rgba(0, 0, 0, 0.4)"
       }}
     >
       <button
@@ -136,14 +140,39 @@ export function BottomNav({ active, go }: BottomNavProps) {
           flexDirection: "column",
           alignItems: "center",
           gap: 4,
-          padding: "8px 0",
-          fontSize: 11,
-          fontWeight: 600,
-          color: active === "games" ? "var(--gold)" : "var(--muted)"
+          userSelect: "none",
+          WebkitTapHighlightColor: "transparent"
         }}
       >
-        <HomeIcon size={20} />
-        Home
+        <div
+          style={{
+            width: 56,
+            height: 30,
+            borderRadius: 16,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: active === "games" ? "linear-gradient(135deg, rgba(243, 211, 117, 0.25) 0%, rgba(212, 175, 55, 0.3) 100%)" : "transparent",
+            border: active === "games" ? "1px solid rgba(212, 175, 55, 0.4)" : "1px solid transparent",
+            transition: "all 0.2s cubic-bezier(0.2, 0, 0, 1)"
+          }}
+        >
+          <HomeIcon
+            size={20}
+            strokeWidth={active === "games" ? 2.5 : 2}
+            color={active === "games" ? "#F3D375" : "#94A3B8"}
+          />
+        </div>
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: active === "games" ? 700 : 500,
+            color: active === "games" ? "#F3D375" : "#94A3B8",
+            letterSpacing: "0.02em"
+          }}
+        >
+          Home
+        </span>
       </button>
 
       <button
@@ -157,14 +186,39 @@ export function BottomNav({ active, go }: BottomNavProps) {
           flexDirection: "column",
           alignItems: "center",
           gap: 4,
-          padding: "8px 0",
-          fontSize: 11,
-          fontWeight: 600,
-          color: active === "profile" ? "var(--gold)" : "var(--muted)"
+          userSelect: "none",
+          WebkitTapHighlightColor: "transparent"
         }}
       >
-        <UserCircle size={20} />
-        Profile
+        <div
+          style={{
+            width: 56,
+            height: 30,
+            borderRadius: 16,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: active === "profile" ? "linear-gradient(135deg, rgba(243, 211, 117, 0.25) 0%, rgba(212, 175, 55, 0.3) 100%)" : "transparent",
+            border: active === "profile" ? "1px solid rgba(212, 175, 55, 0.4)" : "1px solid transparent",
+            transition: "all 0.2s cubic-bezier(0.2, 0, 0, 1)"
+          }}
+        >
+          <UserCircle
+            size={20}
+            strokeWidth={active === "profile" ? 2.5 : 2}
+            color={active === "profile" ? "#F3D375" : "#94A3B8"}
+          />
+        </div>
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: active === "profile" ? 700 : 500,
+            color: active === "profile" ? "#F3D375" : "#94A3B8",
+            letterSpacing: "0.02em"
+          }}
+        >
+          Profile
+        </span>
       </button>
     </div>
   );

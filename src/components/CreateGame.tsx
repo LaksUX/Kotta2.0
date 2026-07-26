@@ -160,26 +160,24 @@ export default function CreateGame({ hostPhone, hostName, onClose, onSave }: Cre
               </div>
             </div>
 
-            <div style={{ marginBottom: 12 }}>
-              <label className="pn-label" style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                Game Format
+            <div style={{ marginBottom: 16 }}>
+              <label className="pn-label" style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}>
+                Game Format Ratio
               </label>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div className="android-segmented-container">
                 <button
                   type="button"
-                  className={`pn-tag-pill ${ratio === "1:1" ? "active" : ""}`}
+                  className={`android-segmented-button ${ratio === "1:1" ? "active" : ""}`}
                   onClick={() => setRatio("1:1")}
-                  style={{ flex: 1, justifyContent: "center", padding: "10px", margin: 0 }}
                 >
-                  1:1
+                  1:1 Ratio
                 </button>
                 <button
                   type="button"
-                  className={`pn-tag-pill ${ratio === "1:2" ? "active" : ""}`}
+                  className={`android-segmented-button ${ratio === "1:2" ? "active" : ""}`}
                   onClick={() => setRatio("1:2")}
-                  style={{ flex: 1, justifyContent: "center", padding: "10px", margin: 0 }}
                 >
-                  1:2
+                  1:2 Ratio
                 </button>
               </div>
             </div>
