@@ -4,6 +4,7 @@ import { getInitialAppState, saveAppState } from "./lib/storage";
 
 import { Header } from "./components/Header";
 import { GamesDashboard } from "./components/GamesDashboard";
+import { LoginScreen } from "./components/LoginScreen";
 import { LiveGameModal } from "./components/LiveGameModal";
 import { CreateGameModal } from "./components/CreateGameModal";
 import { AuthModal } from "./components/AuthModal";
@@ -334,13 +335,21 @@ export default function App() {
           onOpenNotifications={() => setShowNotificationsModal(true)}
         />
 
-        {/* Combined Unified View (Live Tables + Fitness Log & Graphs) */}
+        {/* Main Content Area */}
         <main className="flex-1 overflow-y-auto">
-          <GamesDashboard
-            state={state}
-            onOpenGameDetails={(game) => setActiveGameModal(game)}
-            onOpenCreateGame={() => setShowCreateGame(true)}
-          />
+          {state.currentUser ? (
+            <GamesDashboard
+              state={state}
+              onOpenGameDetails={(game) => setActiveGameModal(game)}
+              onOpenCreateGame={() => setShowCreateGame(true)}
+            />
+          ) : (
+            <LoginScreen
+              state={state}
+              onSelectUser={handleSelectUser}
+              onRegisterUser={handleRegisterUser}
+            />
+          )}
         </main>
 
         {/* Live Game Table Management Modal */}

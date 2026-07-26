@@ -52,51 +52,58 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Action Buttons, Notifications & User Profile */}
         <div className="flex items-center gap-2">
-          {/* Host New Game Button */}
-          <button
-            type="button"
-            onClick={onOpenCreateGame}
-            className="px-3 py-1.5 bg-gradient-to-r from-amber-400 to-amber-300 hover:from-amber-300 hover:to-amber-200 text-black font-extrabold text-xs rounded-xl flex items-center gap-1 shadow-md shadow-amber-400/10 active:scale-95 transition-all"
-          >
-            <Plus size={15} strokeWidth={3} />
-            <span>Host</span>
-          </button>
-
-          {/* Notifications Bell */}
-          <button
-            type="button"
-            onClick={onOpenNotifications}
-            className="relative p-2 bg-[#181B24] border border-white/10 rounded-xl text-[#8E95A5] hover:text-white hover:border-amber-400/40 transition-colors"
-            title="Notifications"
-          >
-            <Bell size={16} />
-            {unreadNotificationsCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white font-black text-[9px] flex items-center justify-center font-mono border border-black animate-pulse">
-                {unreadNotificationsCount}
-              </span>
-            )}
-          </button>
-
-          {/* User Profile Switcher */}
-          <button
-            type="button"
-            onClick={onOpenAuth}
-            className="flex items-center gap-1.5 p-1 bg-[#181B24] border border-white/10 rounded-xl hover:border-amber-400/40 transition-colors"
-            title="Account & Authentication"
-          >
-            {state.currentUser ? (
-              <div
-                className="w-7 h-7 rounded-lg text-black font-bold text-xs flex items-center justify-center font-mono"
-                style={{ backgroundColor: state.currentUser.avatarColor || "#F3D375" }}
+          {state.currentUser ? (
+            <>
+              {/* Host New Game Button */}
+              <button
+                type="button"
+                onClick={onOpenCreateGame}
+                className="px-3 py-1.5 bg-gradient-to-r from-amber-400 to-amber-300 hover:from-amber-300 hover:to-amber-200 text-black font-extrabold text-xs rounded-xl flex items-center gap-1 shadow-md shadow-amber-400/10 active:scale-95 transition-all"
               >
-                {initials(state.currentUser.name)}
-              </div>
-            ) : (
-              <div className="w-7 h-7 rounded-lg bg-white/10 text-[#8E95A5] flex items-center justify-center">
-                <LogIn size={15} />
-              </div>
-            )}
-          </button>
+                <Plus size={15} strokeWidth={3} />
+                <span>Host</span>
+              </button>
+
+              {/* Notifications Bell */}
+              <button
+                type="button"
+                onClick={onOpenNotifications}
+                className="relative p-2 bg-[#181B24] border border-white/10 rounded-xl text-[#8E95A5] hover:text-white hover:border-amber-400/40 transition-colors"
+                title="Notifications"
+              >
+                <Bell size={16} />
+                {unreadNotificationsCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-red-500 text-white font-black text-[9px] flex items-center justify-center font-mono border border-black animate-pulse">
+                    {unreadNotificationsCount}
+                  </span>
+                )}
+              </button>
+
+              {/* User Profile Avatar */}
+              <button
+                type="button"
+                onClick={onOpenAuth}
+                className="flex items-center gap-1.5 p-1 bg-[#181B24] border border-white/10 rounded-xl hover:border-amber-400/40 transition-colors"
+                title="Account & Log Out"
+              >
+                <div
+                  className="w-7 h-7 rounded-lg text-black font-bold text-xs flex items-center justify-center font-mono"
+                  style={{ backgroundColor: state.currentUser.avatarColor || "#F3D375" }}
+                >
+                  {initials(state.currentUser.name)}
+                </div>
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={onOpenAuth}
+              className="px-3.5 py-1.5 bg-gradient-to-r from-amber-400 to-amber-300 hover:from-amber-300 hover:to-amber-200 text-black font-extrabold text-xs rounded-xl flex items-center gap-1 shadow-md active:scale-95 transition-all"
+            >
+              <LogIn size={15} />
+              <span>Log In</span>
+            </button>
+          )}
         </div>
       </div>
     </header>
