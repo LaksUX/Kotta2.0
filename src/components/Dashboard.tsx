@@ -100,6 +100,35 @@ export default function Dashboard({ currentUser, appState, onLogout, onSelectGam
         {/* LEFT COLUMN: Games List & Controls */}
         <div className={`flex flex-col gap-6 ${activeTab === "games" ? "flex" : "hidden"}`}>
 
+          {/* Player Quick Performance Overview Banner on Home */}
+          <div className="bg-gradient-to-r from-[rgba(20,25,36,0.9)] to-[rgba(12,15,22,0.95)] border border-[rgba(212,175,55,0.25)] rounded-2xl p-4 shadow-lg flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[rgba(212,175,55,0.15)] border border-[rgba(212,175,55,0.3)] flex items-center justify-center text-[var(--gold-soft)]">
+                <TrendingUp size={20} />
+              </div>
+              <div>
+                <span className="text-[10px] text-[#94A3B8] uppercase tracking-wider font-semibold block">Player Bankroll</span>
+                <div className="flex items-baseline gap-2">
+                  <span className={`text-xl font-mono font-bold ${playerLedger.totalNet >= 0 ? "text-[var(--success)]" : "text-[var(--danger)]"}`}>
+                    {playerLedger.totalNet > 0 ? `+${playerLedger.totalNet}` : playerLedger.totalNet}
+                  </span>
+                  <span className="text-xs text-[#94A3B8]">Banks</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-4 border-l border-white/10 pl-4">
+              <div className="text-right">
+                <span className="text-[10px] text-[#94A3B8] uppercase tracking-wider block">Win Rate</span>
+                <span className="text-sm font-mono font-bold text-[var(--success)]">{playerLedger.winRate}%</span>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] text-[#94A3B8] uppercase tracking-wider block">Played</span>
+                <span className="text-sm font-mono font-bold text-white">{playerLedger.count} games</span>
+              </div>
+            </div>
+          </div>
+
           {/* Filter Segmented Control */}
           <div className="android-segmented-container">
             <button
