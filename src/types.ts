@@ -97,5 +97,5 @@ export interface AppState {
   buyins: Record<string, Buyin>;
   handNotes: Record<string, HandNote>;
   bankrollGoal: BankrollGoal;
-  activeTab: "games" | "ledger" | "analytics" | "hands" | "players";
+  activeTab: "games" | "ledger" | "players";
 }

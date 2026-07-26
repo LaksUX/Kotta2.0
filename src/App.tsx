@@ -1,17 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { AppState, Game, Buyin, User, HandNote, BankrollGoal } from "./types";
+import { AppState, Game, Buyin, User } from "./types";
 import { getInitialAppState, saveAppState } from "./lib/storage";
 
 import { Header } from "./components/Header";
-import { BottomNav } from "./components/BottomNav";
 import { GamesDashboard } from "./components/GamesDashboard";
 import { LiveGameModal } from "./components/LiveGameModal";
-import { SettlementModal } from "./components/SettlementModal";
 import { CreateGameModal } from "./components/CreateGameModal";
-import { LedgerView } from "./components/LedgerView";
-import { AnalyticsView } from "./components/AnalyticsView";
-import { HandVaultView } from "./components/HandVaultView";
-import { PlayersView } from "./components/PlayersView";
 import { AuthModal } from "./components/AuthModal";
 
 export default function App() {
@@ -19,7 +13,6 @@ export default function App() {
 
   // Modal visibilities
   const [activeGameModal, setActiveGameModal] = useState<Game | null>(null);
-  const [settlementGameModal, setSettlementGameModal] = useState<Game | null>(null);
   const [showCreateGame, setShowCreateGame] = useState<boolean>(false);
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
 
@@ -37,11 +30,6 @@ export default function App() {
     }
   }, []);
 
-  // Handler: Change active tab
-  const handleSelectTab = (tab: AppState["activeTab"]) => {
-    setState((prev) => ({ ...prev, activeTab: tab }));
-  };
-
   // Handler: Switch user profile
   const handleSelectUser = (user: User) => {
     setState((prev) => ({
@@ -53,7 +41,6 @@ export default function App() {
 
   // Handler: Create & host game
   const handleCreateGame = (newGame: Game) => {
-    // Add default initial buyin for host
     const initialBuyinObj: Buyin = {
       id: `b_host_${Date.now()}`,
       gameId: newGame.id,
@@ -146,7 +133,7 @@ export default function App() {
     });
   };
 
-  // Handler: Confirm close & settle game
+  // Handler: Confirm close & save game to Game Data
   const handleConfirmCloseGame = (gameId: string) => {
     setState((prev) => {
       const game = prev.games[gameId];
@@ -155,7 +142,12 @@ export default function App() {
       const approvedBuyins = (Object.values(prev.buyins) as Buyin[]).filter(
         (b) => b.gameId === gameId && b.status === "approved"
       );
-      const playerPhones = Array.from(new Set(approvedBuyins.map((b) => b.phone)));
+      const playerPhones = Array.from(
+        new Set([
+          ...approvedBuyins.map((b) => b.phone),
+          ...Object.keys(game.liveCashouts || {}),
+        ])
+      );
 
       const results: Record<
         string,
@@ -190,8 +182,8 @@ export default function App() {
           totalBuyins: totalBuyinSum,
           actualCashoutSum: cashoutSum,
           expectedPool: totalBuyinSum,
-          variance: totalBuyinSum - (cashoutSum + game.rake),
-          effectiveRake: game.rake,
+          variance: totalBuyinSum - cashoutSum,
+          effectiveRake: 0,
         },
       };
 
@@ -202,7 +194,6 @@ export default function App() {
     });
 
     setActiveGameModal(null);
-    setSettlementGameModal(null);
   };
 
   // Handler: Add new player contact
@@ -220,31 +211,6 @@ export default function App() {
     }));
   };
 
-  // Handler: Add hand note
-  const handleAddHandNote = (hand: HandNote) => {
-    setState((prev) => ({
-      ...prev,
-      handNotes: { ...(prev.handNotes || {}), [hand.id]: hand },
-    }));
-  };
-
-  // Handler: Delete hand note
-  const handleDeleteHandNote = (id: string) => {
-    setState((prev) => {
-      const updated = { ...(prev.handNotes || {}) };
-      delete updated[id];
-      return { ...prev, handNotes: updated };
-    });
-  };
-
-  // Handler: Update bankroll goal
-  const handleUpdateBankrollGoal = (goal: BankrollGoal) => {
-    setState((prev) => ({
-      ...prev,
-      bankrollGoal: goal,
-    }));
-  };
-
   return (
     <div className="min-h-screen bg-[#07090D] text-white font-sans antialiased selection:bg-amber-400 selection:text-black">
       <div className="max-w-md mx-auto min-h-screen bg-[#0B0D11] relative flex flex-col border-x border-white/[0.06] shadow-2xl">
@@ -255,39 +221,14 @@ export default function App() {
           onOpenAuth={() => setShowAuthModal(true)}
         />
 
-        {/* Main Active Tab Content View */}
+        {/* Combined Unified View (Live Tables + Fitness Log & Graphs) */}
         <main className="flex-1 overflow-y-auto">
-          {state.activeTab === "games" && (
-            <GamesDashboard
-              state={state}
-              onOpenGameDetails={(game) => setActiveGameModal(game)}
-              onOpenCreateGame={() => setShowCreateGame(true)}
-            />
-          )}
-
-          {state.activeTab === "ledger" && <LedgerView state={state} />}
-
-          {state.activeTab === "analytics" && <AnalyticsView state={state} />}
-
-          {state.activeTab === "hands" && (
-            <HandVaultView
-              state={state}
-              onAddHandNote={handleAddHandNote}
-              onDeleteHandNote={handleDeleteHandNote}
-            />
-          )}
-
-          {state.activeTab === "players" && (
-            <PlayersView
-              state={state}
-              onAddPlayer={handleAddPlayer}
-              onUpdateBankrollGoal={handleUpdateBankrollGoal}
-            />
-          )}
+          <GamesDashboard
+            state={state}
+            onOpenGameDetails={(game) => setActiveGameModal(game)}
+            onOpenCreateGame={() => setShowCreateGame(true)}
+          />
         </main>
-
-        {/* Bottom Navigation */}
-        <BottomNav activeTab={state.activeTab} onSelectTab={handleSelectTab} />
 
         {/* Live Game Table Management Modal */}
         {activeGameModal && (
@@ -299,29 +240,17 @@ export default function App() {
             onRejectBuyin={handleRejectBuyin}
             onRequestBuyin={handleRequestBuyin}
             onUpdateCashout={handleUpdateCashout}
-            onOpenSettlement={(game) => {
-              setActiveGameModal(null);
-              setSettlementGameModal(game);
-            }}
+            onEndGame={handleConfirmCloseGame}
           />
         )}
 
-        {/* Pairwise Debt Settlement Matrix Modal */}
-        {settlementGameModal && (
-          <SettlementModal
-            game={state.games[settlementGameModal.id] || settlementGameModal}
-            state={state}
-            onClose={() => setSettlementGameModal(null)}
-            onConfirmCloseGame={handleConfirmCloseGame}
-          />
-        )}
-
-        {/* Host New Game Modal */}
+        {/* Host New Game Modal with Integrated Roster & Contact Creation */}
         {showCreateGame && (
           <CreateGameModal
             state={state}
             onClose={() => setShowCreateGame(false)}
             onCreateGame={handleCreateGame}
+            onAddPlayer={handleAddPlayer}
           />
         )}
 

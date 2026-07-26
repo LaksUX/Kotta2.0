@@ -39,7 +39,7 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </div>
             <p className="text-[11px] text-[#8E95A5] font-medium">
-              Ledger & Settlement Engine
+              Frictionless Game & Chip Tracker
             </p>
           </div>
         </div>

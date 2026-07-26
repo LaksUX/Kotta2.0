@@ -1,23 +1,29 @@
-import React from "react";
+import React, { useState } from "react";
 import { AppState, Game, Buyin } from "../types";
 import {
-  Flame,
-  Plus,
-  Play,
-  Share2,
-  Users,
-  CheckCircle2,
-  Clock,
-  Sparkles,
-  ChevronRight,
-  ShieldCheck,
-  TrendingUp,
-  DollarSign,
+  Spade,
   Calendar,
-  AlertCircle,
+  ChevronRight,
   Award,
+  MessageSquare,
+  Activity,
+  Flame,
+  BarChart3,
+  Dumbbell,
+  Check,
 } from "lucide-react";
-import { colorForPhone, initials } from "../lib/storage";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Cell,
+  ReferenceLine,
+} from "recharts";
 
 interface GamesDashboardProps {
   state: AppState;
@@ -30,22 +36,24 @@ export const GamesDashboard: React.FC<GamesDashboardProps> = ({
   onOpenGameDetails,
   onOpenCreateGame,
 }) => {
+  const currentPhone = state.currentUser?.phone || "9876543210";
+  const currentUser = state.currentUser || { name: "Poker Host" };
+
   const gamesList = (Object.values(state.games) as Game[]).sort((a, b) => b.createdAt - a.createdAt);
   const activeGames = gamesList.filter((g) => g.status === "active");
   const closedGames = gamesList.filter((g) => g.status === "closed");
 
-  // Calculate live statistics across tables
-  let totalLiveBuyins = 0;
+  // Calculate live statistics across active tables
+  let totalLiveBuyinBanks = 0;
   let totalLivePlayers = 0;
 
   const allBuyins = Object.values(state.buyins) as Buyin[];
 
   activeGames.forEach((g) => {
-    // sum buyins
     const gameBuyins = allBuyins
       .filter((b) => b.gameId === g.id && b.status === "approved")
       .reduce((sum, b) => sum + b.amount, 0);
-    totalLiveBuyins += gameBuyins;
+    totalLiveBuyinBanks += gameBuyins;
 
     const gamePlayers = new Set(
       allBuyins
@@ -55,237 +63,243 @@ export const GamesDashboard: React.FC<GamesDashboardProps> = ({
     totalLivePlayers += gamePlayers;
   });
 
-  // Calculate total rake collected across closed games
-  const totalRakeCollected = closedGames.reduce((acc, g) => acc + (g.rake || 0), 0);
+  // Extract completed player sessions for fitness graphs
+  const playerSessions = closedGames
+    .map((game) => {
+      const res = game.results?.[currentPhone];
+      if (!res) return null;
+      return {
+        id: game.id,
+        title: game.title,
+        date: game.date,
+        venue: game.venue,
+        ratio: game.ratio || "1:1",
+        buyinBanks: res.buyin,
+        cashoutBanks: res.cashout,
+        netBanks: res.net,
+        timestamp: game.closedAt || game.createdAt,
+      };
+    })
+    .filter(Boolean) as {
+      id: string;
+      title: string;
+      date: string;
+      venue: string;
+      ratio: string;
+      buyinBanks: number;
+      cashoutBanks: number;
+      netBanks: number;
+      timestamp: number;
+    }[];
 
-  // Generate monthly game frequency dots array (like the reference grid)
-  const daysInMonth = Array.from({ length: 28 }, (_, i) => {
-    const day = i + 1;
-    // mock active days for visual bento frequency matrix
-    const hasGame = day % 3 === 0 || day === 24 || day === 20;
-    const isToday = day === 26;
-    return { day, hasGame, isToday };
+  // Calculate Fitness KPI stats
+  let cumulativeBanks = 0;
+  const chartData = playerSessions.map((session, index) => {
+    cumulativeBanks += session.netBanks;
+    return {
+      sessionIndex: index + 1,
+      date: session.date.slice(5),
+      netBanks: session.netBanks,
+      cumulativeBanks,
+      buyin: session.buyinBanks,
+      cashout: session.cashoutBanks,
+    };
   });
 
+  const totalSessions = playerSessions.length;
+  const totalNetBanks = cumulativeBanks;
+  const totalChips = totalNetBanks * 10; // 1 Bank = 10k Chips
+  const winSessions = playerSessions.filter((s) => s.netBanks > 0).length;
+  const winRate = totalSessions > 0 ? Math.round((winSessions / totalSessions) * 100) : 0;
+
+  // Max PR single session win
+  const maxWinPR = playerSessions.reduce(
+    (max, s) => (s.netBanks > max ? s.netBanks : max),
+    0
+  );
+
+  // Active Win Streak
+  let activeStreak = 0;
+  for (let i = playerSessions.length - 1; i >= 0; i--) {
+    if (playerSessions[i].netBanks > 0) {
+      activeStreak++;
+    } else {
+      break;
+    }
+  }
+
+  // Generate 28-Day Activity Heatmap Grid
+  const heatmapTiles = Array.from({ length: 28 }, (_, i) => {
+    const sessionMatch = playerSessions[i % (playerSessions.length || 1)];
+    if (!sessionMatch || playerSessions.length === 0 || i >= playerSessions.length + 5) {
+      return { status: "rest", val: 0 };
+    }
+    return {
+      status: sessionMatch.netBanks >= 0 ? "win" : "loss",
+      val: sessionMatch.netBanks,
+    };
+  });
+
+  const handleWhatsAppShare = (e: React.MouseEvent, game: Game) => {
+    e.stopPropagation();
+    const text = `♠ JOIN POKER GAME ♠\n\n📌 Title: ${game.title}\n📅 Date: ${game.date}\n📍 Location: ${game.venue}\n🎟 Buy-in: ${game.initialBuyin} Bank (10k Chips)\n⚡ Ratio: ${game.ratio || "1:1"}\n👑 Host: ${game.hostName}\n\nLive Game Tracker: ${window.location.origin}?gameId=${game.id}`;
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    window.open(whatsappUrl, "_blank");
+  };
+
   return (
-    <div className="p-4 space-y-4 pb-28 max-w-md mx-auto">
-      {/* Top Banner: User Greeting & Quick Context */}
+    <div className="p-4 space-y-4 pb-12 max-w-md mx-auto">
+      {/* Header Bar */}
       <div className="flex items-center justify-between">
         <div>
           <span className="text-[11px] font-bold text-[#8E95A5] uppercase tracking-wider block">
-            Welcome back
+            Poker Host & Fitness Engine
           </span>
           <h2 className="text-xl font-black text-white tracking-tight flex items-center gap-1.5 font-mono">
-            {state.currentUser?.name || "Poker Host"}
-            <span className="text-amber-400 text-sm font-sans font-bold px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/20">
+            {currentUser.name}
+            <span className="text-amber-400 text-xs font-sans font-bold px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/20">
               Host Pro
             </span>
           </h2>
         </div>
 
+        {/* Host Game Primary Action */}
         <button
           type="button"
           onClick={onOpenCreateGame}
-          className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-300 text-black flex items-center justify-center shadow-lg shadow-amber-400/20 active:scale-95 transition-transform"
-          title="Host New Game"
+          className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-300 text-black font-extrabold text-xs flex items-center gap-1.5 shadow-lg shadow-amber-400/20 active:scale-95 transition-transform"
         >
-          <Plus size={22} strokeWidth={2.5} />
+          <Spade size={16} fill="black" />
+          <span>Host</span>
         </button>
       </div>
 
-      {/* Hero Bento Cards Grid (Inspired by the Reference UI) */}
-      <div className="grid grid-cols-2 gap-3">
-        {/* Card 1: Active Pot & Live Table Stats */}
-        <div className="bg-[#181B24] border border-white/[0.08] rounded-2xl p-4 flex flex-col justify-between space-y-3 relative overflow-hidden shadow-xl">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-amber-400/5 rounded-full blur-2xl pointer-events-none" />
-          
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-[#8E95A5] uppercase tracking-wider">
-              Live Tables
-            </span>
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-          </div>
-
-          <div>
-            <div className="text-2xl font-black text-white font-mono flex items-baseline gap-1">
-              {totalLiveBuyins.toLocaleString()}
-              <span className="text-xs text-amber-300 font-sans font-extrabold">Banks</span>
-            </div>
-            <p className="text-[11px] text-[#8E95A5] mt-0.5">
-              {totalLivePlayers} Players at {activeGames.length} active {activeGames.length === 1 ? "table" : "tables"}
-            </p>
-          </div>
-
-          <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-[11px] font-bold text-amber-300">
-            <span>Pot Volume</span>
-            <span className="font-mono">{activeGames.length > 0 ? "LIVE NOW" : "0 TABLES"}</span>
-          </div>
+      {/* Fitness & Live Summary Metrics Banner */}
+      <div className="grid grid-cols-4 gap-2">
+        <div className="bg-[#181B24] border border-white/[0.08] rounded-xl p-2.5 text-center space-y-1">
+          <span className="text-[9px] font-bold text-[#8E95A5] uppercase block">Lifetime</span>
+          <span
+            className={`text-sm font-black font-mono ${
+              totalNetBanks >= 0 ? "text-emerald-400" : "text-red-400"
+            }`}
+          >
+            {totalNetBanks >= 0 ? `+${totalNetBanks}` : totalNetBanks} B
+          </span>
         </div>
 
-        {/* Card 2: Rake & Bankroll Metrics */}
-        <div className="bg-[#181B24] border border-white/[0.08] rounded-2xl p-4 flex flex-col justify-between space-y-3 relative overflow-hidden shadow-xl">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-[#8E95A5] uppercase tracking-wider">
-              Rake Revenue
-            </span>
-            <Award size={16} className="text-amber-300" />
-          </div>
+        <div className="bg-[#181B24] border border-white/[0.08] rounded-xl p-2.5 text-center space-y-1">
+          <span className="text-[9px] font-bold text-[#8E95A5] uppercase block">Win %</span>
+          <span className="text-sm font-black text-emerald-400 font-mono">{winRate}%</span>
+        </div>
 
-          <div>
-            <div className="text-2xl font-black text-amber-300 font-mono flex items-baseline gap-1">
-              +{totalRakeCollected}
-              <span className="text-xs text-white font-sans font-extrabold">Banks</span>
-            </div>
-            <p className="text-[11px] text-[#8E95A5] mt-0.5">
-              Across {closedGames.length} settled session(s)
-            </p>
-          </div>
+        <div className="bg-[#181B24] border border-white/[0.08] rounded-xl p-2.5 text-center space-y-1">
+          <span className="text-[9px] font-bold text-[#8E95A5] uppercase block">Streak</span>
+          <span className="text-sm font-black text-amber-300 font-mono flex items-center justify-center gap-0.5">
+            <Flame size={12} className="fill-amber-400" /> {activeStreak}
+          </span>
+        </div>
 
-          <div className="pt-2 border-t border-white/[0.06] flex items-center justify-between text-[11px] font-bold text-emerald-400">
-            <span>Variance</span>
-            <span className="font-mono font-extrabold">0% (Balanced)</span>
-          </div>
+        <div className="bg-[#181B24] border border-white/[0.08] rounded-xl p-2.5 text-center space-y-1">
+          <span className="text-[9px] font-bold text-[#8E95A5] uppercase block">Live Table</span>
+          <span className="text-sm font-black text-amber-300 font-mono">
+            {totalLiveBuyinBanks} B
+          </span>
         </div>
       </div>
 
-      {/* Bento Heatmap / Monthly Game Frequency Grid (Reference UI Style) */}
-      <div className="bg-[#181B24] border border-white/[0.08] rounded-2xl p-4 space-y-3 shadow-xl">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-xs font-bold text-white uppercase tracking-wider">
-              Game Activity Frequency
-            </h3>
-            <p className="text-[11px] text-[#8E95A5]">July 2026 Home Games Logged</p>
-          </div>
-          <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-300 font-mono bg-amber-400/10 px-2 py-0.5 rounded-full border border-amber-400/20">
-            <Flame size={12} className="fill-amber-300" /> 3 Games / Wk
-          </div>
-        </div>
-
-        {/* Dots Matrix */}
-        <div className="grid grid-cols-7 gap-1.5 pt-1">
-          {daysInMonth.map((d) => (
-            <div
-              key={d.day}
-              className={`h-7 rounded-lg flex items-center justify-center text-[10px] font-mono font-bold transition-all ${
-                d.isToday
-                  ? "bg-amber-400 text-black ring-2 ring-amber-300 ring-offset-2 ring-offset-[#181B24]"
-                  : d.hasGame
-                  ? "bg-emerald-500/20 border border-emerald-500/40 text-emerald-300"
-                  : "bg-[#0B0D11] border border-white/[0.05] text-[#656C7C]"
-              }`}
-            >
-              {d.day}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Live Active Tables Section */}
+      {/* SECTION 1: LIVE POKER TABLES */}
       <div className="space-y-3">
         <div className="flex items-center justify-between px-1">
           <h3 className="text-xs font-bold text-[#8E95A5] uppercase tracking-wider flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            Active Live Game Tables ({activeGames.length})
+            Live Poker Tables ({activeGames.length})
           </h3>
-          <span className="text-xs text-amber-300 font-bold font-mono">1:1 / 1:2 Banks</span>
         </div>
 
         {activeGames.length === 0 ? (
           <div className="bg-[#181B24] border border-dashed border-white/20 rounded-2xl p-6 text-center space-y-3">
-            <p className="text-xs text-[#8E95A5]">No active games running right now.</p>
+            <p className="text-xs text-[#8E95A5]">No live poker tables running currently.</p>
             <button
+              type="button"
               onClick={onOpenCreateGame}
-              className="px-4 py-2 bg-gradient-to-r from-amber-400 to-amber-300 text-black font-extrabold text-xs rounded-xl shadow-md"
+              className="px-4 py-2.5 bg-gradient-to-r from-amber-400 to-amber-300 text-black font-extrabold text-xs rounded-xl shadow-md active:scale-95 transition-all"
             >
-              Start New Poker Game
+              Host Live Game
             </button>
           </div>
         ) : (
-          activeGames.map((game, idx) => {
+          activeGames.map((game) => {
             const gameBuyinsList = (Object.values(state.buyins) as Buyin[]).filter(
               (b) => b.gameId === game.id && b.status === "approved"
             );
-            const pendingBuyins = (Object.values(state.buyins) as Buyin[]).filter(
-              (b) => b.gameId === game.id && b.status === "pending"
-            );
-            const potTotal = gameBuyinsList.reduce((acc, b) => acc + b.amount, 0);
+            const potTotalBanks = gameBuyinsList.reduce((acc, b) => acc + b.amount, 0);
 
             return (
               <div
                 key={game.id}
                 onClick={() => onOpenGameDetails(game)}
-                className="bg-[#181B24] border border-amber-400/30 rounded-2xl p-4 space-y-3.5 shadow-xl hover:border-amber-400 transition-all cursor-pointer relative group"
+                className="bg-[#181B24] border border-amber-400/40 rounded-2xl p-4 space-y-3 shadow-xl hover:border-amber-400 transition-all cursor-pointer relative group"
               >
-                {/* Header with Circular Badge #1 */}
+                {/* Title and Badges */}
                 <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/40 flex items-center justify-center font-black font-mono text-base shadow-inner">
-                      #{idx + 1}
-                    </div>
-                    <div>
-                      <h4 className="text-base font-extrabold text-white group-hover:text-amber-300 transition-colors">
-                        {game.title}
-                      </h4>
-                      <p className="text-xs text-[#8E95A5] font-medium flex items-center gap-1.5 mt-0.5">
-                        <Calendar size={12} /> {game.date} @ {game.time} • {game.venue}
-                      </p>
-                    </div>
+                  <div>
+                    <h4 className="text-base font-extrabold text-white group-hover:text-amber-300 transition-colors">
+                      {game.title}
+                    </h4>
+                    <p className="text-xs text-[#8E95A5] flex items-center gap-1.5 mt-0.5 font-medium">
+                      <Calendar size={12} /> {game.date} • {game.venue}
+                    </p>
                   </div>
 
-                  <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-extrabold uppercase tracking-wider font-mono">
-                    LIVE TABLE
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/30 text-amber-300 text-[10px] font-mono font-bold">
+                      {game.ratio || "1:1"}
+                    </span>
+                    <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-extrabold uppercase font-mono">
+                      LIVE
+                    </span>
+                  </div>
                 </div>
 
-                {/* Pot & Buyin Badges */}
-                <div className="grid grid-cols-3 gap-2 bg-[#0B0D11]/80 rounded-xl p-2.5 border border-white/5 text-center">
+                {/* Pot Stats */}
+                <div className="grid grid-cols-2 gap-2 bg-[#0B0D11]/80 rounded-xl p-2.5 border border-white/5 text-center">
                   <div>
-                    <span className="text-[9px] font-bold text-[#8E95A5] uppercase tracking-wider block">
-                      Pot Pool
+                    <span className="text-[9px] font-bold text-[#8E95A5] uppercase block">
+                      Banks in Play
                     </span>
                     <span className="text-sm font-extrabold text-amber-300 font-mono">
-                      {potTotal} <span className="text-[10px]">Banks</span>
+                      {potTotalBanks} Banks <span className="text-[10px] font-normal text-[#8E95A5]">({potTotalBanks * 10}k)</span>
                     </span>
                   </div>
-                  <div className="border-x border-white/10">
-                    <span className="text-[9px] font-bold text-[#8E95A5] uppercase tracking-wider block">
-                      Min Buyin
+                  <div className="border-l border-white/10">
+                    <span className="text-[9px] font-bold text-[#8E95A5] uppercase block">
+                      Initial Buy-in
                     </span>
                     <span className="text-sm font-extrabold text-white font-mono">
-                      {game.initialBuyin}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[9px] font-bold text-[#8E95A5] uppercase tracking-wider block">
-                      Host Rake
-                    </span>
-                    <span className="text-sm font-extrabold text-emerald-400 font-mono">
-                      {game.rake}
+                      {game.initialBuyin} Bank <span className="text-[10px] font-normal text-[#8E95A5]">({game.initialBuyin * 10}k)</span>
                     </span>
                   </div>
                 </div>
 
-                {/* Pending Re-buys Alert Banner */}
-                {pendingBuyins.length > 0 && (
-                  <div className="p-2.5 bg-amber-400/15 border border-amber-400/30 rounded-xl flex items-center justify-between text-xs font-bold text-amber-300">
-                    <div className="flex items-center gap-1.5">
-                      <AlertCircle size={15} />
-                      <span>{pendingBuyins.length} pending re-buy request(s)</span>
-                    </div>
-                    <span className="underline text-[11px]">Approve Now &rarr;</span>
-                  </div>
-                )}
+                {/* Quick Actions */}
+                <div className="flex items-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={(e) => handleWhatsAppShare(e, game)}
+                    className="flex-1 py-2 px-3 bg-emerald-600/20 border border-emerald-500/30 hover:border-emerald-400 rounded-xl text-xs font-bold text-emerald-400 flex items-center justify-center gap-1.5 transition-all"
+                  >
+                    <MessageSquare size={14} />
+                    <span>WhatsApp Invite</span>
+                  </button>
 
-                {/* Action CTA Footer */}
-                <div className="flex items-center justify-between text-xs pt-1">
-                  <div className="flex items-center gap-1 text-[#8E95A5]">
-                    <Users size={14} />
-                    <span>{gameBuyinsList.length} buy-ins approved</span>
-                  </div>
-                  <span className="text-amber-300 font-extrabold flex items-center gap-0.5 group-hover:translate-x-1 transition-transform">
-                    Manage Table <ChevronRight size={16} />
-                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onOpenGameDetails(game)}
+                    className="flex-1 py-2 px-3 bg-amber-400 hover:bg-amber-300 text-black font-extrabold text-xs rounded-xl flex items-center justify-center gap-1 shadow-md"
+                  >
+                    <span>Open Table</span>
+                    <ChevronRight size={16} />
+                  </button>
                 </div>
               </div>
             );
@@ -293,39 +307,217 @@ export const GamesDashboard: React.FC<GamesDashboardProps> = ({
         )}
       </div>
 
-      {/* Past Completed Games & Settled Ledgers */}
+      {/* SECTION 2: FITNESS TRACKER GRAPHS */}
       <div className="space-y-3 pt-2">
-        <h3 className="text-xs font-bold text-[#8E95A5] uppercase tracking-wider px-1">
-          Settled Games History ({closedGames.length})
+        <h3 className="text-xs font-bold text-[#8E95A5] uppercase tracking-wider px-1 flex items-center gap-1.5">
+          <Dumbbell size={14} className="text-amber-400" />
+          Fitness Performance Log
         </h3>
 
-        {closedGames.map((game, idx) => {
-          const totalVol = game.rakeInfo?.totalBuyins || 1800;
+        {/* Fitness Graph 1: Cumulative Bankroll Trajectory */}
+        <div className="bg-[#181B24] border border-white/[0.08] rounded-2xl p-4 space-y-3 shadow-xl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Activity size={16} className="text-amber-400" />
+              <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                Bank Trajectory Curve
+              </h4>
+            </div>
+            <span className="text-[10px] text-[#8E95A5] font-mono">1 Bank = 10k Chips</span>
+          </div>
+
+          {chartData.length === 0 ? (
+            <div className="h-32 flex items-center justify-center text-xs text-[#8E95A5] italic">
+              Complete sessions to render bank trajectory curves.
+            </div>
+          ) : (
+            <div className="h-44 w-full pt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="bankGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10B981" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#10B981" stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis dataKey="date" stroke="#656C7C" fontSize={10} tickLine={false} />
+                  <YAxis stroke="#656C7C" fontSize={10} tickLine={false} />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload;
+                        return (
+                          <div className="bg-[#0B0D11] border border-white/20 p-2 rounded-xl text-xs space-y-1 shadow-lg font-mono">
+                            <p className="font-bold text-amber-300">{data.date}</p>
+                            <p className="text-white">
+                              Session Net:{" "}
+                              <span
+                                className={
+                                  data.netBanks >= 0 ? "text-emerald-400 font-bold" : "text-red-400 font-bold"
+                                }
+                              >
+                                {data.netBanks >= 0 ? `+${data.netBanks}` : data.netBanks} Banks
+                              </span>
+                            </p>
+                            <p className="text-[#8E95A5]">
+                              Cumulative: {data.cumulativeBanks} Banks ({data.cumulativeBanks * 10}k Chips)
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <ReferenceLine y={0} stroke="rgba(255,255,255,0.15)" strokeDasharray="3 3" />
+                  <Area
+                    type="monotone"
+                    dataKey="cumulativeBanks"
+                    stroke="#10B981"
+                    strokeWidth={2.5}
+                    fillOpacity={1}
+                    fill="url(#bankGradient)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+
+        {/* Fitness Graph 2: Session Volume Bar Chart */}
+        <div className="bg-[#181B24] border border-white/[0.08] rounded-2xl p-4 space-y-3 shadow-xl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <BarChart3 size={16} className="text-emerald-400" />
+              <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                Session Net Volume
+              </h4>
+            </div>
+            <span className="text-[10px] text-[#8E95A5] font-mono">Green = Win | Red = Loss</span>
+          </div>
+
+          {chartData.length === 0 ? (
+            <div className="h-28 flex items-center justify-center text-xs text-[#8E95A5] italic">
+              Session volume bars will appear here.
+            </div>
+          ) : (
+            <div className="h-36 w-full pt-1">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                  <XAxis dataKey="date" stroke="#656C7C" fontSize={10} tickLine={false} />
+                  <YAxis stroke="#656C7C" fontSize={10} tickLine={false} />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload;
+                        return (
+                          <div className="bg-[#0B0D11] border border-white/20 p-2 rounded-xl text-xs space-y-1 shadow-lg font-mono">
+                            <p className="text-amber-300 font-bold">{data.date}</p>
+                            <p className="text-white">Buy-in: {data.buyin} Banks</p>
+                            <p className="text-white">Cash-out: {data.cashout} Banks</p>
+                            <p
+                              className={
+                                data.netBanks >= 0
+                                  ? "text-emerald-400 font-extrabold"
+                                  : "text-red-400 font-extrabold"
+                              }
+                            >
+                              Net: {data.netBanks >= 0 ? `+${data.netBanks}` : data.netBanks} Banks
+                            </p>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <ReferenceLine y={0} stroke="rgba(255,255,255,0.2)" />
+                  <Bar dataKey="netBanks" radius={[4, 4, 0, 0]}>
+                    {chartData.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.netBanks >= 0 ? "#10B981" : "#EF4444"}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+
+        {/* Fitness Graph 3: 28-Day Activity Grid */}
+        <div className="bg-[#181B24] border border-white/[0.08] rounded-2xl p-4 space-y-3 shadow-xl">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Flame size={16} className="text-amber-400" />
+              <h4 className="text-xs font-bold text-white uppercase tracking-wider">
+                28-Day Session Activity Grid
+              </h4>
+            </div>
+            <span className="text-[10px] text-[#8E95A5]">Fitness Heatmap</span>
+          </div>
+
+          <div className="grid grid-cols-7 gap-1.5 pt-1">
+            {heatmapTiles.map((tile, idx) => {
+              let bgClass = "bg-white/5 border border-white/5";
+              if (tile.status === "win") {
+                bgClass = "bg-emerald-500/80 border border-emerald-400 shadow-sm shadow-emerald-500/30";
+              } else if (tile.status === "loss") {
+                bgClass = "bg-red-500/80 border border-red-400 shadow-sm shadow-red-500/30";
+              }
+
+              return (
+                <div
+                  key={idx}
+                  title={tile.status !== "rest" ? `${tile.val} Banks` : "Rest Day"}
+                  className={`h-7 rounded-lg flex items-center justify-center text-[9px] font-mono font-bold transition-all ${bgClass}`}
+                >
+                  {tile.status === "win" ? `+${tile.val}` : tile.status === "loss" ? tile.val : ""}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* SECTION 3: COMPLETED GAME HISTORY LOG */}
+      <div className="space-y-2 pt-2">
+        <div className="flex items-center justify-between px-1">
+          <h3 className="text-xs font-bold text-[#8E95A5] uppercase tracking-wider">
+            Completed Games Log ({closedGames.length})
+          </h3>
+        </div>
+
+        {closedGames.map((game) => {
+          const myResult = game.results?.[currentPhone];
 
           return (
             <div
               key={game.id}
               onClick={() => onOpenGameDetails(game)}
-              className="bg-[#181B24] border border-white/[0.08] rounded-2xl p-4 space-y-2.5 shadow-md hover:border-white/20 transition-all cursor-pointer group"
+              className="bg-[#181B24] border border-white/[0.08] rounded-2xl p-4 space-y-2 cursor-pointer hover:border-white/20 transition-all"
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="text-sm font-extrabold text-white group-hover:text-amber-300 transition-colors">
-                    {game.title}
-                  </h4>
+                  <h4 className="text-sm font-extrabold text-white">{game.title}</h4>
                   <span className="text-xs text-[#8E95A5]">
                     {game.date} • {game.venue}
                   </span>
                 </div>
 
-                <span className="px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-white/70 text-[10px] font-mono font-bold">
-                  CLOSED & SETTLED
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between text-xs pt-2 border-t border-white/[0.06] font-mono">
-                <span className="text-[#8E95A5]">Total Table Volume:</span>
-                <span className="font-bold text-white">{totalVol} Banks</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="px-2 py-0.5 rounded-full bg-amber-400/10 border border-amber-400/20 text-amber-300 text-[10px] font-mono font-bold">
+                    {game.ratio || "1:1"}
+                  </span>
+                  {myResult && (
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                        myResult.net >= 0 ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400"
+                      }`}
+                    >
+                      {myResult.net >= 0 ? `+${myResult.net} Banks` : `${myResult.net} Banks`}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           );
