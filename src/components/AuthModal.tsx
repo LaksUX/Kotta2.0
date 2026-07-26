@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { AppState, User } from "../types";
-import { X, LogIn, UserPlus, LogOut, Check, Phone, User as UserIcon, ShieldCheck } from "lucide-react";
+import { X, LogOut, Check, Phone, User as UserIcon, ShieldCheck, ArrowRight } from "lucide-react";
 import { initials } from "../lib/storage";
 
 interface AuthModalProps {
@@ -18,7 +18,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onRegisterUser,
   onLogout,
 }) => {
-  const [isSignUp, setIsSignUp] = useState(false);
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState("");
@@ -31,39 +30,35 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setError("");
 
     const cleanPhone = phone.trim();
+    const cleanName = name.trim();
+
     if (!cleanPhone) {
       setError("Please enter a valid phone number.");
       return;
     }
 
-    if (isSignUp) {
-      const cleanName = name.trim();
-      if (!cleanName) {
-        setError("Please enter your name.");
-        return;
-      }
-
-      const newUser: User = {
-        phone: cleanPhone,
-        name: cleanName,
-        pinHash: "1234",
-        avatarColor: "#F3D375",
-      };
-
-      onRegisterUser(newUser);
-      onSelectUser(newUser);
+    const existing = state.users[cleanPhone];
+    if (existing) {
+      onSelectUser(existing);
       onClose();
-    } else {
-      const existing = state.users[cleanPhone];
-      if (existing) {
-        onSelectUser(existing);
-        onClose();
-      } else {
-        // If account doesn't exist yet, automatically offer signup
-        setIsSignUp(true);
-        setError("Account not found. Enter your name below to sign up!");
-      }
+      return;
     }
+
+    if (!cleanName) {
+      setError("Please enter your name.");
+      return;
+    }
+
+    const newUser: User = {
+      phone: cleanPhone,
+      name: cleanName,
+      pinHash: "1234",
+      avatarColor: "#F3D375",
+    };
+
+    onRegisterUser(newUser);
+    onSelectUser(newUser);
+    onClose();
   };
 
   return (
@@ -77,10 +72,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
             <div>
               <h2 className="text-base font-extrabold text-white">
-                {currentUser ? "Account Profile" : isSignUp ? "Create Account" : "Log In"}
+                {currentUser ? "Account Profile" : "Player Sign In"}
               </h2>
               <p className="text-[11px] text-[#8E95A5]">
-                {currentUser ? "Manage your active session" : "Fast player access"}
+                {currentUser ? "Logged in session" : "One-time simple setup"}
               </p>
             </div>
           </div>
@@ -125,40 +120,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
         )}
 
-        {/* Login / Sign Up Form */}
-        <div className="space-y-3">
-          {/* Mode Switcher Buttons */}
-          <div className="grid grid-cols-2 gap-1 bg-[#181B24] p-1 rounded-xl border border-white/10 text-xs font-bold">
-            <button
-              type="button"
-              onClick={() => {
-                setIsSignUp(false);
-                setError("");
-              }}
-              className={`py-2 rounded-lg transition-all ${
-                !isSignUp
-                  ? "bg-amber-400 text-black font-extrabold shadow-md"
-                  : "text-[#8E95A5] hover:text-white"
-              }`}
-            >
-              Log In
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setIsSignUp(true);
-                setError("");
-              }}
-              className={`py-2 rounded-lg transition-all ${
-                isSignUp
-                  ? "bg-amber-400 text-black font-extrabold shadow-md"
-                  : "text-[#8E95A5] hover:text-white"
-              }`}
-            >
-              Sign Up
-            </button>
-          </div>
-
+        {/* Unified Form */}
+        {!currentUser && (
           <form onSubmit={handleSubmit} className="space-y-3 pt-1">
             {error && (
               <div className="bg-amber-400/10 border border-amber-400/30 p-2.5 rounded-xl text-xs text-amber-300 font-medium">
@@ -166,24 +129,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             )}
 
-            {isSignUp && (
-              <div>
-                <label className="text-xs font-bold text-[#8E95A5] uppercase block mb-1">
-                  Full Name
-                </label>
-                <div className="flex items-center bg-[#181B24] border border-white/15 rounded-xl px-3 py-2.5">
-                  <UserIcon size={16} className="text-[#8E95A5] mr-2" />
-                  <input
-                    type="text"
-                    required={isSignUp}
-                    placeholder="e.g. Daniel Vance"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full bg-transparent text-xs font-bold text-white focus:outline-none"
-                  />
-                </div>
+            <div>
+              <label className="text-xs font-bold text-[#8E95A5] uppercase block mb-1">
+                Your Name
+              </label>
+              <div className="flex items-center bg-[#181B24] border border-white/15 rounded-xl px-3 py-2.5">
+                <UserIcon size={16} className="text-[#8E95A5] mr-2" />
+                <input
+                  type="text"
+                  placeholder="e.g. Lakshmesh"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full bg-transparent text-xs font-bold text-white focus:outline-none"
+                />
               </div>
-            )}
+            </div>
 
             <div>
               <label className="text-xs font-bold text-[#8E95A5] uppercase block mb-1">
@@ -206,24 +166,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               type="submit"
               className="w-full py-3 bg-gradient-to-r from-amber-400 to-amber-300 hover:from-amber-300 hover:to-amber-200 text-black font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-lg active:scale-95 transition-all mt-2"
             >
-              {isSignUp ? (
-                <>
-                  <UserPlus size={15} /> Create & Login
-                </>
-              ) : (
-                <>
-                  <LogIn size={15} /> Log In
-                </>
-              )}
+              <span>Continue</span>
+              <ArrowRight size={15} />
             </button>
           </form>
-        </div>
+        )}
 
-        {/* Quick Account Switcher (if users exist in local state) */}
+        {/* Quick Account Switcher */}
         {usersList.length > 0 && (
           <div className="space-y-2 pt-2 border-t border-white/10">
             <label className="text-xs font-bold text-[#8E95A5] uppercase block">
-              Quick Switch Saved Profiles
+              Saved Profiles
             </label>
 
             <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
