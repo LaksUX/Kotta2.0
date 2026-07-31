@@ -12,6 +12,8 @@ import {
   Dumbbell,
   Check,
 } from "lucide-react";
+import { ShareModal } from "./ShareModal";
+import { shareGameInvite } from "../lib/share";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -140,11 +142,12 @@ export const GamesDashboard: React.FC<GamesDashboardProps> = ({
     };
   });
 
+  const [sharingGame, setSharingGame] = useState<Game | null>(null);
+
   const handleWhatsAppShare = (e: React.MouseEvent, game: Game) => {
     e.stopPropagation();
-    const text = `♠ JOIN POKER GAME ♠\n\n📌 Title: ${game.title}\n📅 Date: ${game.date}\n📍 Location: ${game.venue}\n🎟 Buy-in: ${game.initialBuyin} Bank (10k Chips)\n⚡ Ratio: ${game.ratio || "1:1"}\n👑 Host: ${game.hostName}\n\nLive Game Tracker: ${window.location.origin}?gameId=${game.id}`;
-    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-    window.open(whatsappUrl, "_blank");
+    shareGameInvite(game);
+    setSharingGame(game);
   };
 
   return (
@@ -509,6 +512,10 @@ export const GamesDashboard: React.FC<GamesDashboardProps> = ({
           );
         })}
       </div>
+
+      {sharingGame && (
+        <ShareModal game={sharingGame} onClose={() => setSharingGame(null)} />
+      )}
     </div>
   );
 };

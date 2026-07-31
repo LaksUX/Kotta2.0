@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { AppState, Game, User } from "../types";
-import { X, Save, Spade, MessageSquare, Check, Users, Plus, UserPlus } from "lucide-react";
+import { X, Save, Spade, MessageSquare, Check, Users, Plus, UserPlus, Share2 } from "lucide-react";
+import { ShareModal } from "./ShareModal";
+import { shareGameInvite } from "../lib/share";
 
 interface CreateGameModalProps {
   state: AppState;
@@ -22,7 +24,7 @@ export const CreateGameModal: React.FC<CreateGameModalProps> = ({
   const [initialBuyin, setInitialBuyin] = useState(1); // 1 Bank = 10k chips
   const [ratio, setRatio] = useState<"1:1" | "1:2">("1:1");
   const [selectedPlayerPhones, setSelectedPlayerPhones] = useState<string[]>([]);
-  const [whatsappSent, setWhatsappSent] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   // New player inline addition state
   const [showAddPlayer, setShowAddPlayer] = useState(false);
@@ -49,11 +51,17 @@ export const CreateGameModal: React.FC<CreateGameModalProps> = ({
   };
 
   const handleWhatsAppInvite = () => {
-    const inviteText = `♠ HOST POKER GAME INVITE ♠\n\n📌 Title: ${title}\n📅 Date: ${date} at ${time}\n📍 Location: ${venue}\n🎟 Buy-in: ${initialBuyin} Bank (10k Chips)\n⚡ Stakes Ratio: ${ratio}\n👑 Host: ${state.currentUser?.name}\n\nJoin table link: ${window.location.origin}`;
-    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(inviteText)}`;
-    window.open(whatsappUrl, "_blank");
-    setWhatsappSent(true);
-    setTimeout(() => setWhatsappSent(false), 3000);
+    const draftGame = {
+      title,
+      date,
+      time,
+      venue,
+      initialBuyin,
+      ratio,
+      hostName: state.currentUser?.name,
+    };
+    shareGameInvite(draftGame);
+    setShowShareModal(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -278,7 +286,7 @@ export const CreateGameModal: React.FC<CreateGameModalProps> = ({
             className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-2 shadow-md transition-all active:scale-95"
           >
             <MessageSquare size={16} />
-            <span>{whatsappSent ? "WhatsApp Opened!" : "Share Invite via WhatsApp"}</span>
+            <span>Share Invite via WhatsApp</span>
           </button>
 
           <button
@@ -289,6 +297,21 @@ export const CreateGameModal: React.FC<CreateGameModalProps> = ({
             <span>Host Game</span>
           </button>
         </form>
+
+        {showShareModal && (
+          <ShareModal
+            game={{
+              title,
+              date,
+              time,
+              venue,
+              initialBuyin,
+              ratio,
+              hostName: state.currentUser?.name,
+            }}
+            onClose={() => setShowShareModal(false)}
+          />
+        )}
       </div>
     </div>
   );

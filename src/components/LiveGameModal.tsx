@@ -14,6 +14,8 @@ import {
   Lock,
 } from "lucide-react";
 import { initials, colorForPhone } from "../lib/storage";
+import { ShareModal } from "./ShareModal";
+import { shareGameInvite } from "../lib/share";
 
 interface LiveGameModalProps {
   game: Game;
@@ -40,6 +42,7 @@ export const LiveGameModal: React.FC<LiveGameModalProps> = ({
   const currentPhone = state.currentUser?.phone;
 
   const [copiedInvite, setCopiedInvite] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [rebuyAmount, setRebuyAmount] = useState<number>(game.initialBuyin || 1); // default 1 Bank
   const [showRebuyModal, setShowRebuyModal] = useState(false);
   const [confirmEnd, setConfirmEnd] = useState(false);
@@ -85,11 +88,10 @@ export const LiveGameModal: React.FC<LiveGameModalProps> = ({
     0
   );
 
-  // Share Invite Link via WhatsApp
+  // Share Invite Link via WhatsApp & Share Modal
   const handleWhatsAppShare = () => {
-    const text = `♠ JOIN POKER GAME ♠\n\n📌 Title: ${game.title}\n📅 Date: ${game.date}\n📍 Location: ${game.venue}\n🎟 Buy-in: ${game.initialBuyin} Bank (10k Chips)\n⚡ Ratio: ${game.ratio || "1:1"}\n👑 Host: ${game.hostName}\n\nLive Game Tracker: ${window.location.origin}?gameId=${game.id}`;
-    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-    window.open(whatsappUrl, "_blank");
+    shareGameInvite(game);
+    setShowShareModal(true);
   };
 
   const handleCopyInvite = () => {
@@ -390,6 +392,10 @@ export const LiveGameModal: React.FC<LiveGameModalProps> = ({
               </button>
             </div>
           </div>
+        )}
+
+        {showShareModal && (
+          <ShareModal game={game} onClose={() => setShowShareModal(false)} />
         )}
       </div>
     </div>
